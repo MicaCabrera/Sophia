@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sophia — Tecnología con propósito</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- DM Mono (títulos/numeración/elementos técnicos) + Instrument Sans
+       (textos/párrafos) — tipografía unificada del sitio. Orbitron: uso
+       puntual y explícito solo para el texto "MENU" del nav desktop
+       (pedido específico, no forma parte de la tipografía general). -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       NAV — Desktop, rediseño inspirado en Dragonfly.xyz
+       ----------------------------------------------------------------
+       Header de 3 bloques (logo / cuadrados interactivos / "MENU") +
+       panel desplegable. El elemento central son 5 cuadrados CSS-only
+       (".dfy-nav__dot") que GSAP reordena entre el estado cerrado y
+       abierto (ver initDfyNav() en script.js) — nada de imágenes. Los
+       links del panel son <a href="#..."> normales: los toma el mismo
+       listener de smooth-scroll (ScrollToPlugin) que ya usa el resto
+       del sitio, sin lógica nueva de scroll. No toca el menú mobile
+       (.island / .menu-overlay, abajo).
+  ============================================================ -->
+  <div class="nav-wrapper">
+    <header class="dfy-nav">
+      <a class="dfy-nav__logo" href="#inicio">
+        SOPH<span class="logo-accent">IA</span>
+      </a>
+
+      <button class="dfy-nav__toggle" type="button" id="dfyNavToggle" aria-expanded="false" aria-controls="dfyNavPanel" aria-label="Abrir menú de navegación">
+        <span class="dfy-nav__grid" aria-hidden="true">
+          <span class="dfy-nav__dot"></span>
+          <span class="dfy-nav__dot"></span>
+          <span class="dfy-nav__dot"></span>
+          <span class="dfy-nav__dot"></span>
+          <span class="dfy-nav__dot"></span>
+        </span>
+      </button>
+
+      <button class="dfy-nav__menu-label" type="button" id="dfyNavMenuLabel" aria-expanded="false" aria-controls="dfyNavPanel">MENU</button>
+    </header>
+
+    <div class="dfy-nav__panel" id="dfyNavPanel">
+      <nav class="dfy-nav__list" aria-label="Navegación principal">
+        <a class="dfy-nav__row" href="#s3-caps"><span class="dfy-nav__num">01</span><span class="dfy-nav__label">Capacidades</span></a>
+        <a class="dfy-nav__row" href="#s4-intro"><span class="dfy-nav__num">02</span><span class="dfy-nav__label">Productos</span></a>
+        <a class="dfy-nav__row" href="#idi"><span class="dfy-nav__num">03</span><span class="dfy-nav__label">I+D+i</span></a>
+        <a class="dfy-nav__row" href="#trayectoria"><span class="dfy-nav__num">04</span><span class="dfy-nav__label">Trayectoria</span></a>
+        <a class="dfy-nav__row" href="#contacto"><span class="dfy-nav__num">05</span><span class="dfy-nav__label">Contacto</span></a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ============ NAV — Mobile (island) ============ -->
+  <div class="island">
+    <div class="island-logo--cont"><span class="island-logo">SOPH<span class="logo-accent">IA</span></span></div>
+    <button class="menu-btn" id="menuToggle" aria-expanded="false" aria-controls="menu-overlay" aria-label="Abrir menú de navegación">
+      <div class="button-cont">
+        <svg id="menuIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <line class="bar bar-top" x1="2" y1="5" x2="14" y2="5" stroke-width="1.5" stroke-linecap="round" />
+          <line class="bar bar-mid" x1="2" y1="8" x2="14" y2="8" stroke-width="1.5" stroke-linecap="round" />
+          <line class="bar bar-bot" x1="2" y1="11" x2="14" y2="11" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </div>
+    </button>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+    <div class="menu-backdrop"></div>
+    <div class="menu-panel">
+      <nav>
+        <a class="menu-link" href="#s3-caps" tabindex="-1"><span>Capacidades</span><span class="link-num">01</span></a>
+        <a class="menu-link" href="#s4-intro" tabindex="-1"><span>Productos</span><span class="link-num">02</span></a>
+        <a class="menu-link" href="#divisiones" tabindex="-1"><span>Divisiones</span><span class="link-num">03</span></a>
+        <a class="menu-link" href="#idi" tabindex="-1"><span>I+D+i</span><span class="link-num">04</span></a>
+        <a class="menu-link" href="#trayectoria" tabindex="-1"><span>Trayectoria</span><span class="link-num">05</span></a>
+        <a class="menu-link" href="#contacto" tabindex="-1"><span>Contacto</span><span class="link-num">06</span></a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero" id="inicio">
+    <div class="hero__bg">
+      <div class="hero__image">
+        <img src="assets/fondo-home.png" alt="Figuras futuristas con cascos iluminados en azul, en un ambiente oscuro" />
+      </div>
+      <div class="hero__overlay" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero__title-wrap">
+      <h1 class="hero__title">Tecnología con propósito</h1>
+    </div>
+
+    <div class="hero__texts">
+      <div class="hero__socials" aria-label="Redes sociales">
+        <a class="hero__social-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <img src="assets/icons/icon-insta.png" alt="" />
+        </a>
+        <a class="hero__social-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+          <img src="assets/icons/icon-in.png" alt="" />
+        </a>
+        <button class="hero__social-link" type="button" id="shareBtn" aria-label="Compartir">
+          <img src="assets/icons/icon-share.png" alt="" />
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       SECCIÓN "CAPACIDADES" — migrada tal cual del sitio anterior
+       (HTML, CSS y JS sin modificaciones). Reemplaza a la antigua
+       "Sección 02 — Placeholder". No es parte del sistema de
+       transición pin+scale+fade genérico: tiene su propio sistema
+       de scroll/pin propio (ver script.js), que convive en paralelo
+       sin conflictos.
+  ============================================================ -->
+<section class="pa" id="s3-caps">
+
+    <div class="pa__inner reveal-section">
+
+        <!-- Barra de progreso -->
+        <div class="pa__topbar">
+            <span class="pa__topbar-label">Capacidades</span>
+            <div class="pa__topbar-right">
+                <span class="pa__counter" aria-hidden="true"><span class="pa__counter-current">1</span>/<span class="pa__counter-total">6</span></span>
+                <div class="pa__progress" aria-hidden="true">
+                    <div class="pa__progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Escenario -->
+        <div class="pa__stage">
+
+            <!-- Flecha izquierda -->
+            <button class="pa__arrow pa__arrow--prev" type="button" aria-label="Capacidad anterior">
+                <span class="pa__arrow-label" aria-hidden="true">[&lt;]</span>
+            </button>
+
+            <div class="pa__viewport">
+
+                <div class="pa__track">
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 1 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="0">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/capacidades1.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Inteligencia Artificial</h3>
+                            <p class="pa__panel-desc">
+                                Desarrollamos modelos y asistentes inteligentes capaces de automatizar procesos,
+                                analizar información y potenciar la toma de decisiones.
+                            </p>
+                        </div>
+
+                    </article>
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 2 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="1">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/software.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Desarrollo de Software</h3>
+                            <p class="pa__panel-desc">
+                                Diseñamos y desarrollamos plataformas web, aplicaciones móviles y sistemas
+                                a medida adaptados a las necesidades de cada organización.
+                            </p>
+                        </div>
+
+                    </article>
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 3 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="2">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/iot.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Internet de las Cosas (IoT)</h3>
+                            <p class="pa__panel-desc">
+                                Integramos sensores, dispositivos y equipos para capturar información en tiempo real y optimizar procesos e infraestructura.
+                            </p>
+                        </div>
+
+                    </article>
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 4 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="3">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/datos.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Analítica de Datos</h3>
+                            <p class="pa__panel-desc">
+                                Transformamos grandes volúmenes de datos en indicadores, visualizaciones y modelos que facilitan decisiones estratégicas.
+                            </p>
+                        </div>
+
+                    </article>
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 5 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="4">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/automatizacion.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Automatización</h3>
+                            <p class="pa__panel-desc">
+                                Optimizamos procesos operativos y administrativos mediante flujos inteligentes que reducen tiempos, errores y costos.
+                            </p>
+                        </div>
+
+                    </article>
+
+                    <!-- ===================================================== -->
+                    <!-- CARD 6 -->
+                    <!-- ===================================================== -->
+
+                    <article class="pa__slide" data-index="5">
+
+                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+
+                        <div class="pa__image">
+                            <video class="pa__video" muted loop playsinline preload="metadata">
+                                <source src="recursos/integracion.mp4" type="video/mp4">
+                            </video>
+                        </div>
+
+                        <div class="pa__panel">
+                            <h3 class="pa__panel-title">Integración de Sistemas</h3>
+                            <p class="pa__panel-desc">
+                                Conectamos aplicaciones, APIs, bases de datos y plataformas para crear ecosistemas tecnológicos unificados, escalables y seguros.
+                            </p>
+                        </div>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+            <!-- Flecha derecha -->
+            <button class="pa__arrow pa__arrow--next" type="button" aria-label="Siguiente capacidad">
+                <span class="pa__arrow-label" aria-hidden="true">[&gt;]</span>
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+  <!-- ============================================================
+       ⚠️ SECCIONES DE PRUEBA — CONTENIDO PLACEHOLDER TEMPORAL ⚠️
+       Solo existen para validar la transición de scroll (pin + scale
+       + fade) entre secciones. NO son diseño final. (Las secciones 02
+       y 03 ya se reemplazaron por contenido real, arriba; queda esta.)
+
+       Para reemplazarlas por las secciones reales:
+       1) Borrar este bloque completo (<main id="test-sections">...</main>)
+       2) Borrar el bloque CSS marcado "SECCIONES DE PRUEBA" en style.css
+       3) El bloque JS de la transición (marcado "TRANSICIÓN ENTRE
+          SECCIONES" en script.js) NO hay que tocarlo: solo agregarle
+          la clase "test-section" (o el nombre que seas) a las secciones
+          reales nuevas y va a seguir funcionando igual.
+  ============================================================ -->
+  <main id="test-sections">
+    <section class="test-section test-section--2" id="test-3">
+      <div class="cap2-content">
+        <span class="cap2-corner cap2-corner--tl" aria-hidden="true"></span>
+        <span class="cap2-corner cap2-corner--tr" aria-hidden="true"></span>
+        <span class="cap2-corner cap2-corner--bl" aria-hidden="true"></span>
+        <span class="cap2-corner cap2-corner--br" aria-hidden="true"></span>
+        <p class="cap2-title">
+          Reunimos <span class="cap2-highlight">experiencia</span>, <span class="cap2-highlight">tecnología</span>
+          y <span class="cap2-highlight">talento</span> para desarrollar soluciones
+          que resuelven los desafíos más complejos de la actualidad.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+<!-- ============================================================
+     S4 — SECCIÓN "PRODUCTOS"
+     (antes S6 en el sitio viejo — mismo diseño de tabs + filas tipo
+     Dragonfly, renombrado a "prod-*" y con id="s4-intro" para calzar
+     con los links de navegación que ya apuntaban ahí: navbar, menú
+     mobile y navegador lateral no necesitaron ningún cambio.)
+============================================================ -->
+
+<section id="s4-intro" class="reveal-section">
+    <div class="prod-container">
+        <div class="prod-tabs" id="prod-tabs">
+            <button class="prod-tab active" data-filter="all" type="button">Todo</button>
+            <button class="prod-tab" data-filter="timbrame24" type="button">TimbraMe24</button>
+            <button class="prod-tab" data-filter="camia" type="button">CamIA</button>
+            <button class="prod-tab" data-filter="empleados-virtuales" type="button">Empleados Virtuales</button>
+            <button class="prod-tab" data-filter="smart-meter" type="button">Smart Meter++</button>
+            <button class="prod-tab" data-filter="domotica" type="button">Domótica</button>
+            <button class="prod-tab" data-filter="pet24" type="button">Pet24</button>
+            <button class="prod-tab" data-filter="gestion-riesgos" type="button">Riegos y Desastres</button>
+        </div>
+
+        <div class="prod-list" id="prod-list">
+
+            <div class="prod-row" data-category="timbrame24">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">TimbraMe24</div>
+                <div class="prod-row-desc">
+                    Sistema de intercomunicación inteligente con acceso mediante QR, gestión remota
+                    y control de ingresos sin instalaciones complejas.
+                </div>
+                <div class="prod-row-tag">Smart Access</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="camia">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">CamIA</div>
+                <div class="prod-row-desc">
+                    Atiende clientes, recomienda productos y gestiona pedidos mediante conversaciones
+                    naturales, mejorando la experiencia gastronómica.
+                </div>
+                <div class="prod-row-tag">Servicios</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="empleados-virtuales">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">Empleados Virtuales</div>
+                <div class="prod-row-desc">
+                    Agentes inteligentes especializados que automatizan tareas, responden consultas
+                    y colaboran con equipos de trabajo.
+                </div>
+                <div class="prod-row-tag">Inteligencia Artificial</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="smart-meter">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">Smart Meter++</div>
+                <div class="prod-row-desc">
+                    Captura y analiza datos en tiempo real para optimizar el consumo energético y
+                    mejorar la eficiencia operativa.
+                </div>
+                <div class="prod-row-tag">IoT · Energía</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="domotica">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">Domótica</div>
+                <div class="prod-row-desc">
+                    Integra automatización, control de accesos, seguridad y monitoreo para crear
+                    edificios más eficientes y preparados para el futuro.
+                </div>
+                <div class="prod-row-tag">Smart Buildings</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="pet24">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">Pet24</div>
+                <div class="prod-row-desc">
+                    Plataforma inteligente que conecta mascotas, familias y veterinarios mediante
+                    identificación QR e historial digital.
+                </div>
+                <div class="prod-row-tag">PetTech</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <div class="prod-row" data-category="gestion-riesgos">
+                <div class="prod-row-num" aria-hidden="true"></div>
+                <div class="prod-row-title js-scramble js-scramble-fast">Gestión de Riesgos</div>
+                <div class="prod-row-desc">
+                    Plataforma para monitorear incidentes, coordinar respuestas y emitir alertas
+                    tempranas mediante datos en tiempo real.
+                </div>
+                <div class="prod-row-tag">Smart Cities</div>
+                <div class="prod-row-icon" aria-hidden="true">
+                    <span class="prod-row-icon-glyph">❱❱</span>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 PRESENTACIÓN COMERCIAL (PDF embebido)
+                 A propósito DENTRO de #prod-list (es un ítem flex más): así
+                 script.js puede usar el mismo mecanismo de "order" que ya
+                 usa para las filas, y este panel queda posicionado siempre
+                 justo debajo de la fila activa, sin importar que las filas
+                 ocultas sigan reservando su espacio más abajo.
+                 Contenedor único y compartido: se llena dinámicamente con
+                 el PDF del producto activo (según PRODUCT_PDFS en
+                 script.js). Vacío/oculto por defecto.
+            ============================================================ -->
+            <div class="prod-presentation" id="prod-presentation" aria-hidden="true"></div>
+
+        </div>
+    </div>
+</section>
+
+  <!-- ============================================================
+       SECCIÓN "I+D+I" — Proceso de Innovación
+       ----------------------------------------------------------------
+       Sección nueva, última del sitio. Usa el mismo patrón de
+       pin+scrub por ScrollTrigger que ya usa Capacidades (ver
+       script.js) para su propio recorrido interno (intro → 4 etapas),
+       y AHORA TAMBIÉN participa del sistema de transición pin+scale+
+       fade genérico como "sección entrante": Productos se pinea y se
+       desvanece hacia esta sección exactamente igual que el resto del
+       sitio (ver initSectionTransitions() en script.js).
+       Timeline vertical curvo (SVG) con línea que se dibuja + indicador
+       que la recorre + etapas que se reemplazan entre sí, sincronizado
+       con el scroll. Sin Tech Corners: lenguaje visual propio, sin
+       reutilizar elementos de la Sección 03.
+  ============================================================ -->
+  <section class="idi" id="idi">
+    <span class="idi__eyebrow">I+D+i</span>
+
+    <div class="idi__inner">
+      <div class="idi__intro">
+        <div class="idi__intro-block">
+          <span class="idi__intro-corner idi__intro-corner--tl" aria-hidden="true"></span>
+          <span class="idi__intro-corner idi__intro-corner--tr" aria-hidden="true"></span>
+          <span class="idi__intro-corner idi__intro-corner--bl" aria-hidden="true"></span>
+          <span class="idi__intro-corner idi__intro-corner--br" aria-hidden="true"></span>
+          <h2 class="idi__intro-title">Para nosotros la innovación es un <span class="idi__highlight">proceso</span>, no un <span class="idi__highlight">resultado</span>.</h2>
+        </div>
+      </div>
+
+      <div class="idi__process" aria-hidden="true">
+        <div class="idi__timeline">
+          <svg class="idi__path-svg" viewBox="0 0 200 900" preserveAspectRatio="none">
+            <path class="idi__path-track"
+              d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
+            <path class="idi__path-progress" stroke="#077DB3"
+              d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
+          </svg>
+          <div class="idi__indicator"></div>
+          <div class="idi__node" data-index="0"><span class="idi__node-num">01</span></div>
+          <div class="idi__node" data-index="1"><span class="idi__node-num">02</span></div>
+          <div class="idi__node" data-index="2"><span class="idi__node-num">03</span></div>
+          <div class="idi__node" data-index="3"><span class="idi__node-num">04</span></div>
+        </div>
+
+        <div class="idi__stages">
+          <article class="idi__stage" data-index="0">
+            <span class="idi__stage-num">FASE 01</span>
+            <h3 class="idi__stage-title">Investigación</h3>
+            <p class="idi__stage-desc">
+              Analizamos necesidades, identificamos oportunidades y exploramos tecnologías emergentes
+              para comprender cada desafío.
+            </p>
+          </article>
+
+          <article class="idi__stage" data-index="1">
+            <span class="idi__stage-num">FASE 02</span>
+            <h3 class="idi__stage-title">Diseño y Desarrollo</h3>
+            <p class="idi__stage-desc">
+              Transformamos las ideas en plataformas, dispositivos y soluciones inteligentes mediante
+              software, Inteligencia Artificial e IoT.
+            </p>
+          </article>
+
+          <article class="idi__stage" data-index="2">
+            <span class="idi__stage-num">FASE 03</span>
+            <h3 class="idi__stage-title">Validación</h3>
+            <p class="idi__stage-desc">
+              Probamos cada desarrollo en escenarios reales para garantizar rendimiento, seguridad y
+              escalabilidad.
+            </p>
+          </article>
+
+          <article class="idi__stage" data-index="3">
+            <span class="idi__stage-num">FASE 04</span>
+            <h3 class="idi__stage-title">Evolución</h3>
+            <p class="idi__stage-desc">
+              Nuestros productos continúan creciendo con nuevas funcionalidades, mejoras e innovación
+              constante.
+            </p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
