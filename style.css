@@ -567,8 +567,8 @@ a {
   --color-primary: #077DB3;        /* color de énfasis de la paleta */
   --color-primary-deep: #077DB3;   /* la paleta define un solo azul: sin variante para degradés */
   --color-primary-soft: #077DB31a; /* versión translúcida del color principal */
-  --color-bg: #11151C;              /* mismo fondo oscuro que usa el body del sitio */
-  --color-surface: #ffffff;        /* panel blanco flotante */
+  --color-bg: #000000;             /*/fondo seccion capacidades
+    --color-surface: #ffffff;        /* panel blanco flotante */
   --color-text: #ffffff;           /* texto claro sobre fondo oscuro */
   --color-text-muted: var(--color-gray); /* gris secundario de la paleta */
   --color-track: rgba(229, 229, 229, 0.16); /* línea base muy sutil de la barra de progreso */
@@ -1466,55 +1466,50 @@ a {
 /* ============================================================================
    SECCIÓN "I+D+I" — Proceso de Innovación
    ----------------------------------------------------------------------------
-   Última sección del sitio. El pin+scrub que la controla vive en script.js
-   (mismo patrón que usa Capacidades); acá solo el diseño. El fondo arranca
-   CLARO (#F5F9E9, para la intro) y cruza a OSCURO (#11151C, para el
-   timeline) durante el mismo scroll — la transición la anima script.js
-   (gsap.set del background-color) reusando el progreso que ya calcula el
-   ScrollTrigger existente, sin tocar start/end/pin/duración. Contenido
-   alineado a la izquierda, bloque centrado en el viewport. Timeline
-   vertical curvo (SVG) con marcas en X (no círculos) en vez de Tech
-   Corners — lenguaje visual propio, sin reutilizar elementos de otras
-   secciones.
+   Dos <section> consecutivas e independientes (antes eran dos bloques
+   dentro de la misma sección — separadas así el timeline puede ocupar
+   toda la pantalla en su propio pin, sin compartir espacio con el
+   título):
+
+   1) ".idi-hero" (~60vh): eyebrow + título, con scroll normal (sin
+      pin). El título reutiliza directamente ".cap2-content"/
+      ".cap2-title"/".cap2-highlight" (Sección 03, "Reunimos
+      experiencia..."): mismo ancho máximo, alineación, interlineado,
+      responsive y el mismo efecto de aparición por scramble (ver
+      script.js) — cero CSS nuevo para el título en sí, solo hereda.
+
+   2) ".idi-timeline": el timeline solo, centrado y a pantalla completa.
+      Es la que pinea (ver script.js).
    ============================================================================ */
 
-.idi {
+.idi-hero {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 60vh;
+  background: var(--black);
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #F5F9E9; /* estado inicial (intro): script.js anima este valor al scrollear */
-  overflow: hidden;
-  padding: clamp(90px, 11vh, 130px) 24px clamp(48px, 7vh, 72px);
+  justify-content: center;
+  padding: 100px 24px;
   box-sizing: border-box;
 }
 
-/* Ancho igual al de ".idi__inner" (mismo "min(1000px, 100%)") para que,
-   con text-align:left, el texto quede alineado al mismo borde izquierdo
-   que el resto del contenido de abajo — el BLOQUE en sí lo sigue centrando
-   ".idi" (align-items:center) en el viewport, como pide el diseño. */
+/* Identificador "I+D+i": mismo estilo de siempre, alineado a la
+   izquierda del título (ambos dentro del mismo ".cap2-content"). */
 .idi__eyebrow {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  width: min(1000px, 100%);
   font-family: 'DM Mono', monospace;
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.32em;
   text-transform: uppercase;
   text-align: left;
-  /* Arranca en tinta oscura (legible sobre el fondo claro de la intro);
-     script.js la anima a gris claro a medida que el fondo cruza a oscuro
-     en el timeline — el elemento queda fijo en pantalla (sección pineada)
-     durante todo el recorrido, así que necesita funcionar sobre los dos
-     fondos. */
-  color: var(--black);
-  margin-bottom: clamp(20px, 4vh, 36px);
+  color: var(--bone);
+  margin-bottom: clamp(20px, 3vh, 32px);
 }
 
 /* Cuadrado azul CSS-only antes del texto (sin íconos ni imágenes) */
@@ -1527,108 +1522,36 @@ a {
   background: var(--color-primary);
 }
 
-.idi__inner {
+/* --- Timeline: sección propia, a pantalla completa --- */
+.idi-timeline {
   position: relative;
-  width: min(1000px, 100%);
-  flex: 1;
-}
-
-/* Introducción: ≈80vh — una entrada amplia antes del recorrido, con mucho
-   espacio negativo, pero sigue siendo solo la INTRO (el timeline, una vez
-   que se desvanece, se despliega sobre el resto de ".idi__inner"). */
-.idi__intro {
-  position: relative;
-  height: 80vh;
-  max-height: 620px;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--black);
   display: flex;
   align-items: center;
-  /* El bloque del título queda centrado en pantalla (mismo criterio que la
-     Sección 03: bloque centrado, texto alineado a la izquierda ADENTRO
-     del bloque vía ".idi__intro-title{text-align:left}"). */
   justify-content: center;
+  padding: clamp(60px, 9vh, 110px) 24px;
+  box-sizing: border-box;
 }
 
-/* Mismo ancho que ".cap2-content" (Sección 03) para que ambos bloques de
-   texto se sientan parte del mismo lenguaje visual. */
-.idi__intro-block {
-  position: relative;
-  max-width: 780px;
-  padding: clamp(36px, 6vw, 56px) clamp(32px, 6vw, 64px);
-}
-
-/* Esquinas técnicas (Tech/HUD Corners), mismo recurso que ".cap2-corner"
-   pero en el color de énfasis: a diferencia de la Sección 03 (elemento
-   estático, blanco), acá se pidió explícitamente en azul. */
-.idi__intro-corner {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--color-primary);
-  pointer-events: none;
-}
-
-.idi__intro-corner--tl {
-  top: 0;
-  left: 0;
-  border-right: none;
-  border-bottom: none;
-  border-top-left-radius: 4px;
-}
-
-.idi__intro-corner--tr {
-  top: 0;
-  right: 0;
-  border-left: none;
-  border-bottom: none;
-  border-top-right-radius: 4px;
-}
-
-.idi__intro-corner--bl {
-  bottom: 0;
-  left: 0;
-  border-right: none;
-  border-top: none;
-  border-bottom-left-radius: 4px;
-}
-
-.idi__intro-corner--br {
-  bottom: 0;
-  right: 0;
-  border-left: none;
-  border-top: none;
-  border-bottom-right-radius: 4px;
-}
-
-.idi__intro-title {
-  font-family: 'DM Mono', monospace;
-  font-weight: 600;
-  font-size: clamp(1.35rem, 2.6vw, 2rem);
-  line-height: 1.4;
-  text-align: left;
-  color: var(--black); /* texto principal oscuro sobre el fondo claro de la intro */
-  margin: 0;
-}
-
-/* Palabras clave resaltadas dentro del título (color de énfasis) */
-.idi__highlight {
-  color: var(--color-primary);
-}
-
-/* El proceso se superpone a TODO ".idi__inner" (no solo al alto de la
-   intro): una vez que la intro se desvanece, el timeline dispone de todo
-   el alto disponible de la sección para su recorrido vertical. */
+/* Mismo padding horizontal que el resto del sitio; centrado en el
+   viewport tanto horizontal como verticalmente. */
 .idi__process {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: min(1200px, 100%);
+  margin: 0 auto;
   display: flex;
   align-items: stretch;
-  gap: clamp(28px, 5vw, 64px);
+  justify-content: center;
+  gap: clamp(20px, 3vw, 40px);
+  min-height: clamp(460px, 60vh, 640px);
 }
 
 /* Timeline vertical curvo */
 .idi__timeline {
   position: relative;
-  width: clamp(90px, 11vw, 140px);
+  width: clamp(70px, 8vw, 110px);
   flex-shrink: 0;
 }
 
@@ -1642,7 +1565,7 @@ a {
 
 .idi__path-track {
   fill: none;
-  stroke: rgba(229, 229, 229, 0.18); /* gris muy sutil sobre el fondo oscuro del timeline */
+  stroke: rgba(255, 255, 255, 0.15); /* línea base sutil, sobre el fondo negro del sitio */
   stroke-width: 2;
 }
 
@@ -1661,9 +1584,9 @@ a {
   width: 16px;
   height: 16px;
   pointer-events: none;
-  color: var(--color-primary);
+  color: var(--bone);
   z-index: 2;
-  filter: drop-shadow(0 0 5px rgba(7, 125, 179, 0.55));
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.55));
 }
 
 .idi__indicator::before,
@@ -1690,7 +1613,7 @@ a {
   width: 14px;
   height: 14px;
   pointer-events: none;
-  color: var(--color-gray);
+  color: #7E7F83; /* gris neutro, mismo tono que usa el estado "pendiente" desde JS */
   z-index: 3;
 }
 
@@ -1751,7 +1674,7 @@ a {
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-gray);
+  color: rgba(255, 255, 255, 0.55); /* texto secundario sobre fondo negro */
 }
 
 /* Mismo cuadrado CSS-only que ".idi__eyebrow", antes del texto */
@@ -1768,7 +1691,7 @@ a {
   font-family: 'DM Mono', monospace;
   font-weight: 600;
   font-size: clamp(1.3rem, 2.6vw, 1.85rem);
-  color: var(--bone); /* títulos → blanco sobre el fondo oscuro del timeline */
+  color: var(--bone);
   margin: 0;
 }
 
@@ -1777,23 +1700,30 @@ a {
   font-weight: 400;
   font-size: clamp(0.92rem, 1.2vw, 1rem);
   line-height: 1.65;
-  color: var(--color-gray);
+  color: rgba(255, 255, 255, 0.65); /* texto secundario sobre fondo negro */
   max-width: 46ch;
   margin: 0;
 }
 
+/* Tablet: ".idi-timeline" es la que pinea — su contenido tiene que
+   seguir entrando en un viewport (100vh), por eso se achica el
+   ".idi__process" acá. ".idi-hero" no pinea (scroll normal), así que no
+   tiene ese límite: su propio responsive ya lo resuelve heredado de
+   ".cap2-content"/".cap2-title". El timeline conserva su misma
+   composición en fila (curva + texto) en todos los tamaños. */
+@media (max-width: 900px) {
+  .idi__process {
+    min-height: clamp(420px, 68vh, 560px);
+  }
+}
+
 @media (max-width: 640px) {
-  .idi__intro {
-    height: 70vh;
+  .idi-timeline {
+    padding: clamp(40px, 8vh, 70px) 20px;
   }
 
-  .idi__intro-block {
-    padding: 28px 24px;
-  }
-
-  .idi__intro-corner {
-    width: 20px;
-    height: 20px;
+  .idi__process {
+    min-height: clamp(380px, 64vh, 480px);
   }
 
   .idi__timeline {

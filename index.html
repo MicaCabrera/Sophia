@@ -488,84 +488,85 @@
   <!-- ============================================================
        SECCIÓN "I+D+I" — Proceso de Innovación
        ----------------------------------------------------------------
-       Sección nueva, última del sitio. Usa el mismo patrón de
-       pin+scrub por ScrollTrigger que ya usa Capacidades (ver
-       script.js) para su propio recorrido interno (intro → 4 etapas),
-       y AHORA TAMBIÉN participa del sistema de transición pin+scale+
-       fade genérico como "sección entrante": Productos se pinea y se
-       desvanece hacia esta sección exactamente igual que el resto del
-       sitio (ver initSectionTransitions() en script.js).
-       Timeline vertical curvo (SVG) con línea que se dibuja + indicador
-       que la recorre + etapas que se reemplazan entre sí, sincronizado
-       con el scroll. Sin Tech Corners: lenguaje visual propio, sin
-       reutilizar elementos de la Sección 03.
-  ============================================================ -->
-  <section class="idi" id="idi">
-    <span class="idi__eyebrow">I+D+i</span>
+       Ahora son DOS <section> consecutivas e independientes:
 
-    <div class="idi__inner">
-      <div class="idi__intro">
-        <div class="idi__intro-block">
-          <span class="idi__intro-corner idi__intro-corner--tl" aria-hidden="true"></span>
-          <span class="idi__intro-corner idi__intro-corner--tr" aria-hidden="true"></span>
-          <span class="idi__intro-corner idi__intro-corner--bl" aria-hidden="true"></span>
-          <span class="idi__intro-corner idi__intro-corner--br" aria-hidden="true"></span>
-          <h2 class="idi__intro-title">Para nosotros la innovación es un <span class="idi__highlight">proceso</span>, no un <span class="idi__highlight">resultado</span>.</h2>
-        </div>
+       1) ".idi-hero" (id="idi", ~60vh, sin timeline): eyebrow + título.
+          Reutiliza literalmente las clases ".cap2-content"/".cap2-title"/
+          ".cap2-highlight" de la Sección 03 ("Reunimos experiencia...")
+          para el título — mismo ancho máximo, alineación, interlineado,
+          responsive y el mismo efecto de aparición (scramble por
+          carácter, ver el bloque "Text Scramble en el título" de
+          script.js, ahora generalizado con querySelectorAll para que
+          alcance a cualquier ".cap2-title" del documento, este incluido).
+          Sigue siendo el punto de anclaje del nav ("#idi").
+
+       2) ".idi-timeline" (id="idi-timeline"): el timeline solo, ocupando
+          toda la pantalla. Es la que pinea (ver script.js) — el único
+          cambio de lógica que exige la separación en dos secciones es
+          que ese pin ahora apunta a "idi-timeline" en vez de "idi"
+          (una sección ya no puede pinear su propio título Y el timeline
+          por separado). GSAP/ScrollTrigger/pin/scrub/curva/indicador/
+          transición entre fases: sin cambios.
+  ============================================================ -->
+  <section class="idi-hero" id="idi">
+    <div class="cap2-content">
+      <span class="idi__eyebrow">I+D+i</span>
+      <h2 class="cap2-title">Para nosotros la innovación es un <span class="cap2-highlight">proceso</span>, no un <span class="cap2-highlight">resultado</span>.</h2>
+    </div>
+  </section>
+
+  <section class="idi-timeline" id="idi-timeline">
+    <div class="idi__process" aria-hidden="true">
+      <div class="idi__timeline">
+        <svg class="idi__path-svg" viewBox="0 0 200 900" preserveAspectRatio="none">
+          <path class="idi__path-track"
+            d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
+          <path class="idi__path-progress" stroke="#077DB3"
+            d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
+        </svg>
+        <div class="idi__indicator"></div>
+        <div class="idi__node" data-index="0"><span class="idi__node-num">01</span></div>
+        <div class="idi__node" data-index="1"><span class="idi__node-num">02</span></div>
+        <div class="idi__node" data-index="2"><span class="idi__node-num">03</span></div>
+        <div class="idi__node" data-index="3"><span class="idi__node-num">04</span></div>
       </div>
 
-      <div class="idi__process" aria-hidden="true">
-        <div class="idi__timeline">
-          <svg class="idi__path-svg" viewBox="0 0 200 900" preserveAspectRatio="none">
-            <path class="idi__path-track"
-              d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
-            <path class="idi__path-progress" stroke="#077DB3"
-              d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
-          </svg>
-          <div class="idi__indicator"></div>
-          <div class="idi__node" data-index="0"><span class="idi__node-num">01</span></div>
-          <div class="idi__node" data-index="1"><span class="idi__node-num">02</span></div>
-          <div class="idi__node" data-index="2"><span class="idi__node-num">03</span></div>
-          <div class="idi__node" data-index="3"><span class="idi__node-num">04</span></div>
-        </div>
+      <div class="idi__stages">
+        <article class="idi__stage" data-index="0">
+          <span class="idi__stage-num">FASE 01</span>
+          <h3 class="idi__stage-title">Investigación</h3>
+          <p class="idi__stage-desc">
+            Analizamos necesidades, identificamos oportunidades y exploramos tecnologías emergentes
+            para comprender cada desafío.
+          </p>
+        </article>
 
-        <div class="idi__stages">
-          <article class="idi__stage" data-index="0">
-            <span class="idi__stage-num">FASE 01</span>
-            <h3 class="idi__stage-title">Investigación</h3>
-            <p class="idi__stage-desc">
-              Analizamos necesidades, identificamos oportunidades y exploramos tecnologías emergentes
-              para comprender cada desafío.
-            </p>
-          </article>
+        <article class="idi__stage" data-index="1">
+          <span class="idi__stage-num">FASE 02</span>
+          <h3 class="idi__stage-title">Diseño y Desarrollo</h3>
+          <p class="idi__stage-desc">
+            Transformamos las ideas en plataformas, dispositivos y soluciones inteligentes mediante
+            software, Inteligencia Artificial e IoT.
+          </p>
+        </article>
 
-          <article class="idi__stage" data-index="1">
-            <span class="idi__stage-num">FASE 02</span>
-            <h3 class="idi__stage-title">Diseño y Desarrollo</h3>
-            <p class="idi__stage-desc">
-              Transformamos las ideas en plataformas, dispositivos y soluciones inteligentes mediante
-              software, Inteligencia Artificial e IoT.
-            </p>
-          </article>
+        <article class="idi__stage" data-index="2">
+          <span class="idi__stage-num">FASE 03</span>
+          <h3 class="idi__stage-title">Validación</h3>
+          <p class="idi__stage-desc">
+            Probamos cada desarrollo en escenarios reales para garantizar rendimiento, seguridad y
+            escalabilidad.
+          </p>
+        </article>
 
-          <article class="idi__stage" data-index="2">
-            <span class="idi__stage-num">FASE 03</span>
-            <h3 class="idi__stage-title">Validación</h3>
-            <p class="idi__stage-desc">
-              Probamos cada desarrollo en escenarios reales para garantizar rendimiento, seguridad y
-              escalabilidad.
-            </p>
-          </article>
-
-          <article class="idi__stage" data-index="3">
-            <span class="idi__stage-num">FASE 04</span>
-            <h3 class="idi__stage-title">Evolución</h3>
-            <p class="idi__stage-desc">
-              Nuestros productos continúan creciendo con nuevas funcionalidades, mejoras e innovación
-              constante.
-            </p>
-          </article>
-        </div>
+        <article class="idi__stage" data-index="3">
+          <span class="idi__stage-num">FASE 04</span>
+          <h3 class="idi__stage-title">Evolución</h3>
+          <p class="idi__stage-desc">
+            Nuestros productos continúan creciendo con nuevas funcionalidades, mejoras e innovación
+            constante.
+          </p>
+        </article>
       </div>
     </div>
   </section>

@@ -237,8 +237,8 @@ function prepareScramble(el) {
   const finalText = el.textContent.trim();
 
   // Conserva qué palabras estaban envueltas en su propio <span> (ej.
-  // ".cap2-highlight"/".idi__highlight" para resaltar palabras clave en
-  // el color de énfasis): se recorren los childNodes ANTES de vaciar el
+  // ".cap2-highlight", para resaltar palabras clave en el color de
+  // énfasis): se recorren los childNodes ANTES de vaciar el
   // elemento, y cada "run" de texto guarda la clase de su nodo de origen
   // (o ninguna, si es texto plano) para que los spans de carácter que se
   // reconstruyen abajo hereden el mismo color.
@@ -1024,41 +1024,50 @@ document.addEventListener("DOMContentLoaded", () => {
    página; este arranca cuando la sección entra en pantalla (con
    IntersectionObserver), ya que el usuario llega a ella recién
    después de hacer scroll.
+
+   Generalizado a TODOS los ".cap2-title" del documento (antes
+   buscaba uno solo con querySelector): el título de I+D+i reutiliza
+   literalmente esta misma clase para heredar el mismo efecto de
+   aparición, con el mismo timing/threshold — cada título dispara su
+   propio observer de forma independiente, según cuándo entra en
+   pantalla.
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const cap2Title = document.querySelector(".cap2-title");
-  if (!cap2Title || prefersReducedMotion) return;
+  const cap2Titles = document.querySelectorAll(".cap2-title");
+  if (!cap2Titles.length || prefersReducedMotion) return;
 
-  const runCap2Scramble = () => {
-    const { spans } = prepareScramble(cap2Title);
-    spans.forEach((span) => {
-      span.textContent = SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
-    });
-    scrambleChars(spans, { duration: 1400, staggerPerChar: 18 });
-  };
-
-  const start = () => {
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => runCap2Scramble());
-    } else {
-      runCap2Scramble();
-    }
-  };
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          start();
-          observer.unobserve(cap2Title);
-        }
+  cap2Titles.forEach((cap2Title) => {
+    const runCap2Scramble = () => {
+      const { spans } = prepareScramble(cap2Title);
+      spans.forEach((span) => {
+        span.textContent = SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
       });
-    },
-    { threshold: 0.4 }
-  );
+      scrambleChars(spans, { duration: 1400, staggerPerChar: 18 });
+    };
 
-  observer.observe(cap2Title);
+    const start = () => {
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => runCap2Scramble());
+      } else {
+        runCap2Scramble();
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            start();
+            observer.unobserve(cap2Title);
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+
+    observer.observe(cap2Title);
+  });
 });
 
 /* ============================================================
@@ -1344,24 +1353,30 @@ tabs.forEach((tab) => {
    nativa de SVG (getPointAtLength), ya alcanza y sobra: no se suman
    Three.js, Flip ni ningún plugin nuevo.
 
+   El título (".idi-hero", id="idi") y el timeline (".idi-timeline",
+   id="idi-timeline") son ahora dos <section> consecutivas e
+   independientes: el título se lee con scroll normal, con su propio
+   efecto de aparición (ver "Text Scramble en el título" más arriba, que
+   ahora también lo alcanza a él), y recién cuando ese scroll normal
+   saca al título de pantalla arranca esta sección. La SECCIÓN
+   ".idi-timeline" completa es lo que pinea — así ocupa toda la
+   pantalla mientras la línea se dibuja y las etapas se reemplazan.
    Mismo patrón que el pin del carrusel de Capacidades: un solo
    ScrollTrigger (pin:true + scrub), todo el estado derivado de
    self.progress en un único onUpdate (nada de scroll-jacking manual).
-   Como es la última sección del sitio, al terminar el recorrido el
-   pin se libera con total normalidad y ahí termina la página. Sí
-   participa como "entrante" del sistema de transición genérico: ver
-   initSectionTransitions(), que ahora pinea Productos como saliente
-   hacia acá.
+   Como es la última sección del sitio, al terminar el recorrido el pin
+   se libera con total normalidad y ahí termina la página. El título
+   (".idi-hero", id="idi") sigue participando como "entrante" del
+   sistema de transición genérico: ver initSectionTransitions(), que
+   pinea Productos como saliente hacia su inicio — eso no cambia, es un
+   punto de entrada distinto al pin de acá abajo.
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  const section = document.getElementById("idi");
+  const section = document.getElementById("idi-timeline");
   if (!section || typeof ScrollTrigger === "undefined") return;
 
   gsap.registerPlugin(ScrollTrigger);
 
-  const introEl = section.querySelector(".idi__intro");
-  const processEl = section.querySelector(".idi__process");
-  const eyebrowEl = section.querySelector(".idi__eyebrow");
   const pathEl = section.querySelector(".idi__path-progress");
   const indicatorEl = section.querySelector(".idi__indicator");
   const stages = gsap.utils.toArray(".idi__stage", section);
@@ -1373,15 +1388,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const COLOR_PRIMARY = "#077DB3";
   const COLOR_INACTIVE = "#7E7F83"; // gris secundario, indicador pendiente
   const NODE_GLOW = "drop-shadow(0 0 5px rgba(7, 125, 179, 0.55))";
-
-  // La sección arranca con fondo CLARO (intro) y cruza a OSCURO (timeline)
-  // durante el mismo scroll pineado — se interpola cada frame en base al
-  // mismo "introOpacity" que ya calcula el onUpdate de abajo, así que no
-  // agrega ningún trigger/temporización nueva, solo estética.
-  const BG_LIGHT = "#F5F9E9";
-  const BG_DARK = "#11151C";
-  const EYEBROW_INK_LIGHT = "#11151C";
-  const EYEBROW_INK_DARK = "#E5E5E5";
 
   // El viewBox del SVG es fijo (200x900, ver index.html) y el <svg> usa
   // preserveAspectRatio="none": el mapeo de coordenadas del path a % del
@@ -1405,15 +1411,11 @@ document.addEventListener("DOMContentLoaded", () => {
     node.style.top = pt.top;
   });
 
-  // Estado inicial: intro visible, proceso oculto, línea sin dibujar,
-  // indicador y primera etapa/nodo en el punto de partida. El indicador
-  // (la X que recorre el path) usa xPercent/yPercent en vez del centrado
-  // por CSS: así GSAP puede combinar posición + rotación en el mismo
-  // transform sin pisarse con nada declarado en la hoja de estilos.
-  gsap.set(introEl, { autoAlpha: 1, y: 0 });
-  gsap.set(processEl, { autoAlpha: 0 });
-  gsap.set(section, { backgroundColor: BG_LIGHT });
-  if (eyebrowEl) gsap.set(eyebrowEl, { color: EYEBROW_INK_LIGHT });
+  // Estado inicial: línea sin dibujar, indicador y primera etapa/nodo en
+  // el punto de partida. El indicador (la X que recorre el path) usa
+  // xPercent/yPercent en vez del centrado por CSS: así GSAP puede
+  // combinar posición + rotación en el mismo transform sin pisarse con
+  // nada declarado en la hoja de estilos.
   gsap.set(pathEl, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
   gsap.set(indicatorEl, { ...pointAt(0), xPercent: -50, yPercent: -50, rotation: 0 });
   gsap.set(stages, { autoAlpha: 0, y: 10 });
@@ -1421,18 +1423,16 @@ document.addEventListener("DOMContentLoaded", () => {
   gsap.set(nodes[0], { color: COLOR_PRIMARY, filter: NODE_GLOW });
 
   // Duraciones en "unidades de viewport" (mismo criterio que STEP_VH/
-  // END_BUFFER_VH del carrusel de Capacidades): INTRO_VH da tiempo a leer
-  // el título compacto antes de que arranque el recorrido, STEP_VH es el
-  // tramo de scroll por cada paso de la línea, END_BUFFER_VH es el
-  // colchón final que evita que el pin se suelte apenas se llega a la
-  // última etapa.
-  const INTRO_VH = 0.6;
+  // END_BUFFER_VH del carrusel de Capacidades): STEP_VH es el tramo de
+  // scroll por cada paso de la línea, END_BUFFER_VH es el colchón final
+  // que evita que el pin se suelte apenas se llega a la última etapa. Ya
+  // no hay un tramo de "intro" acá: el título se lee en scroll normal,
+  // ANTES de que este pin exista.
   const STEP_VH = 0.8;
   const END_BUFFER_VH = 0.5;
   const STEPS_VH = STEP_VH * (TOTAL - 1);
-  const TOTAL_VH = INTRO_VH + STEPS_VH + END_BUFFER_VH;
-  const introRatio = INTRO_VH / TOTAL_VH;
-  const activeRatio = (INTRO_VH + STEPS_VH) / TOTAL_VH;
+  const TOTAL_VH = STEPS_VH + END_BUFFER_VH;
+  const activeRatio = STEPS_VH / TOTAL_VH;
 
   let currentStage = 0;
 
@@ -1477,6 +1477,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   ScrollTrigger.create({
+    // Pinea la SECCIÓN completa ("#idi-timeline"), no solo ".idi__process":
+    // probado a mano que GSAP calcula mal el alto del pin-spacer cuando el
+    // elemento pineado es justo el bloque interno (queda sin reservar el
+    // espacio de scroll del recorrido, aunque el trigger reporte start/end
+    // correctos) — pineando su contenedor se obtiene el mismo resultado
+    // visual sin ese problema.
     trigger: section,
     start: "top top",
     end: () => "+=" + window.innerHeight * TOTAL_VH,
@@ -1485,28 +1491,12 @@ document.addEventListener("DOMContentLoaded", () => {
     onUpdate: (self) => {
       const p = self.progress;
 
-      // Fase 1 (0..introRatio): el título es visible y luego se desvanece
-      // dando paso al proceso — igual idea que la referencia, que ubica
-      // el elemento en su primer marcador antes de empezar a moverlo.
-      const introP = gsap.utils.clamp(0, 1, p / introRatio);
-      const FADE_START = 0.55;
-      const introOpacity = introP < FADE_START ? 1 : 1 - (introP - FADE_START) / (1 - FADE_START);
-      gsap.set(introEl, { autoAlpha: introOpacity, y: -introP * 14 });
-      gsap.set(processEl, { autoAlpha: 1 - introOpacity });
-
-      // Cruce de fondo claro→oscuro (y tinta del eyebrow) sincronizado con
-      // el mismo desvanecimiento de la intro, no con un tramo aparte.
-      gsap.set(section, { backgroundColor: gsap.utils.interpolate(BG_LIGHT, BG_DARK, 1 - introOpacity) });
-      if (eyebrowEl) {
-        gsap.set(eyebrowEl, { color: gsap.utils.interpolate(EYEBROW_INK_LIGHT, EYEBROW_INK_DARK, 1 - introOpacity) });
-      }
-
-      // Fase 2 (introRatio..activeRatio): la línea se dibuja con el
-      // scroll y el indicador (la X) la recorre punto a punto, girando
-      // suave y de forma continua (0° a 180° en todo el recorrido — un
-      // giro lento, nunca brusco) mientras avanza; cada etapa reemplaza
-      // a la anterior al llegar el indicador a su nodo.
-      const lineP = gsap.utils.clamp(0, 1, (p - introRatio) / (activeRatio - introRatio));
+      // La línea se dibuja con el scroll y el indicador (la X) la
+      // recorre punto a punto, girando suave y de forma continua (0° a
+      // 180° en todo el recorrido — un giro lento, nunca brusco)
+      // mientras avanza; cada etapa reemplaza a la anterior al llegar
+      // el indicador a su nodo.
+      const lineP = gsap.utils.clamp(0, 1, p / activeRatio);
       gsap.set(pathEl, { strokeDashoffset: pathLength * (1 - lineP) });
       gsap.set(indicatorEl, { ...pointAt(lineP), xPercent: -50, yPercent: -50, rotation: lineP * 180 });
 
