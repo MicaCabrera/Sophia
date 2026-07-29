@@ -10,24 +10,38 @@
   <!-- DM Mono (títulos/numeración/elementos técnicos) + Instrument Sans
        (textos/párrafos) — tipografía unificada del sitio. Orbitron: uso
        puntual y explícito solo para el texto "MENU" del nav desktop
-       (pedido específico, no forma parte de la tipografía general). -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+       (pedido específico, no forma parte de la tipografía general).
+       Geist Mono: uso puntual y explícito solo dentro de la sección
+       "Capacidades" (pedido específico para esa grilla de cards; el
+       resto del sitio sigue en DM Mono). -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Geist+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Globo terráqueo WebGPU del Hero (pedido explícito, adaptado de
+       earth/three-js-webgpu-cinematic-earth/ — ver "earth-hero.js" en la
+       raíz). Import map: resuelve los imports ES module de "three"/
+       "three/webgpu"/"three/tsl"/"three/examples/jsm/*"/"lil-gui" que usa
+       ese script — solo afecta a <script type="module">, no interfiere
+       con los <script> clásicos de GSAP de más abajo. Three.js r184/185
+       acá adentro, independiente de cualquier otra versión de Three que
+       el sitio pueda haber usado antes en otra parte. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
+        "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
+        "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
+        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.21.0/dist/lil-gui.esm.js"
+      }
+    }
+  </script>
 </head>
 <body>
 
   <!-- ============================================================
-       NAV — Desktop, rediseño inspirado en Dragonfly.xyz
-       ----------------------------------------------------------------
-       Header de 3 bloques (logo / cuadrados interactivos / "MENU") +
-       panel desplegable. El elemento central son 5 cuadrados CSS-only
-       (".dfy-nav__dot") que GSAP reordena entre el estado cerrado y
-       abierto (ver initDfyNav() en script.js) — nada de imágenes. Los
-       links del panel son <a href="#..."> normales: los toma el mismo
-       listener de smooth-scroll (ScrollToPlugin) que ya usa el resto
-       del sitio, sin lógica nueva de scroll. No toca el menú mobile
-       (.island / .menu-overlay, abajo).
+       NAV — Desktop, 
   ============================================================ -->
   <div class="nav-wrapper">
     <header class="dfy-nav">
@@ -52,9 +66,18 @@
       <nav class="dfy-nav__list" aria-label="Navegación principal">
         <a class="dfy-nav__row" href="#s3-caps"><span class="dfy-nav__num">01</span><span class="dfy-nav__label">Capacidades</span></a>
         <a class="dfy-nav__row" href="#s4-intro"><span class="dfy-nav__num">02</span><span class="dfy-nav__label">Productos</span></a>
-        <a class="dfy-nav__row" href="#idi"><span class="dfy-nav__num">03</span><span class="dfy-nav__label">I+D+i</span></a>
+        <a class="dfy-nav__row" href="#idi-timeline"><span class="dfy-nav__num">03</span><span class="dfy-nav__label">I+D+i</span></a>
         <a class="dfy-nav__row" href="#trayectoria"><span class="dfy-nav__num">04</span><span class="dfy-nav__label">Trayectoria</span></a>
         <a class="dfy-nav__row" href="#contacto"><span class="dfy-nav__num">05</span><span class="dfy-nav__label">Contacto</span></a>
+        <!-- Pedido explícito: solo el logo, sin link ni hover — antes era
+             un "<a>" hacia cadipel.com.ar (ver ".tr__link" en Trayectoria
+             para ese link real). Se deja como "<div>" no interactivo,
+             "aria-hidden" porque es puramente decorativo (nada que anunciar
+             ni a dónde navegar). Ver ".dfy-nav__row--brand:hover" en
+             style.css para el hover que se le sacó. -->
+        <div class="dfy-nav__row dfy-nav__row--brand" aria-hidden="true">
+          <img class="dfy-nav__brand-logo" src="recursos/imagenes/Logo%20Cadipel.png" alt="Cadipel" loading="lazy" />
+        </div>
       </nav>
     </div>
   </div>
@@ -80,32 +103,66 @@
         <a class="menu-link" href="#s3-caps" tabindex="-1"><span>Capacidades</span><span class="link-num">01</span></a>
         <a class="menu-link" href="#s4-intro" tabindex="-1"><span>Productos</span><span class="link-num">02</span></a>
         <a class="menu-link" href="#divisiones" tabindex="-1"><span>Divisiones</span><span class="link-num">03</span></a>
-        <a class="menu-link" href="#idi" tabindex="-1"><span>I+D+i</span><span class="link-num">04</span></a>
+        <a class="menu-link" href="#idi-timeline" tabindex="-1"><span>I+D+i</span><span class="link-num">04</span></a>
         <a class="menu-link" href="#trayectoria" tabindex="-1"><span>Trayectoria</span><span class="link-num">05</span></a>
         <a class="menu-link" href="#contacto" tabindex="-1"><span>Contacto</span><span class="link-num">06</span></a>
+        <!-- Logo Cadipel — pedido explícito "sacarle hover y que no sea un
+             link, solo es el logo": ya NO usa ".menu-link" (esa clase es la
+             que script.js recorre para togglear "tabindex" 0/-1 al abrir/
+             cerrar el menú y armar la trampa de foco por Tab — sacándola,
+             el logo queda afuera de esa lógica de foco/teclado por
+             completo, como corresponde a un elemento puramente
+             decorativo). El borde redondeado inferior y la línea
+             separadora que antes heredaba de ".menu-link:last-child"/
+             ".menu-link + .menu-link" ahora están directo en ".menu-brand"
+             (ver style.css) para no depender de esa clase. Se agregó igual
+             a ".menu-brand" en el selector del fade-in de entrada
+             (script.js, "initMenu()") para que la animación de apertura
+             del menú se siga viendo igual que antes. -->
+        <div class="menu-brand" aria-hidden="true">
+          <img src="recursos/imagenes/Logo%20Cadipel.png" alt="Cadipel" loading="lazy" />
+        </div>
       </nav>
     </div>
   </div>
 
   <!-- ============ HERO ============ -->
   <header class="hero" id="inicio">
-    <div class="hero__bg">
-      <div class="hero__image">
-        <img src="assets/fondo-home.png" alt="Figuras futuristas con cascos iluminados en azul, en un ambiente oscuro" />
+
+    <div class="hero-3d" id="hero3d" aria-hidden="true">
+      <canvas id="earth-canvas"></canvas>
+      <div id="hud-container"></div>
+      <div id="loader">
+        <div class="loader-bg-glow"></div>
+        <div class="loader-grid"></div>
+        <div class="loader-content">
+          <div class="spinner-outer"></div>
+          <div class="spinner-inner"></div>
+          <div class="loader-counter">
+            <span class="loader-percent">
+              <span id="loader-progress-val">0</span>
+              <span class="loader-percent-symbol">%</span>
+            </span>
+          </div>
+          <div class="loader-title">System Boot</div>
+          <div id="loader-message-val" class="loader-message">Initializing WebGPU Renderer</div>
+          <div class="loader-bar-bg">
+            <div id="loader-progress-bar" class="loader-bar-fill"></div>
+          </div>
+        </div>
       </div>
-      <div class="hero__overlay" aria-hidden="true"></div>
     </div>
 
     <div class="hero__title-wrap">
-      <h1 class="hero__title">Tecnología con propósito</h1>
+      <h1 class="hero__title">[ SOPHIA TECH CORP ]</h1>
     </div>
 
     <div class="hero__texts">
       <div class="hero__socials" aria-label="Redes sociales">
-        <a class="hero__social-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+        <a class="hero__social-link" href="https://www.instagram.com/sophiatechcorp" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
           <img src="assets/icons/icon-insta.png" alt="" />
         </a>
-        <a class="hero__social-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+        <a class="hero__social-link" href="https://www.linkedin.com/company/sophia-tech-corp" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
           <img src="assets/icons/icon-in.png" alt="" />
         </a>
         <button class="hero__social-link" type="button" id="shareBtn" aria-label="Compartir">
@@ -116,206 +173,171 @@
   </header>
 
   <!-- ============================================================
-       SECCIÓN "CAPACIDADES" — migrada tal cual del sitio anterior
-       (HTML, CSS y JS sin modificaciones). Reemplaza a la antigua
-       "Sección 02 — Placeholder". No es parte del sistema de
-       transición pin+scale+fade genérico: tiene su propio sistema
-       de scroll/pin propio (ver script.js), que convive en paralelo
-       sin conflictos.
+       SECCIÓN "CAPACIDADES" — grilla editorial premium (rediseño)
   ============================================================ -->
 <section class="pa" id="s3-caps">
 
-    <div class="pa__inner reveal-section">
+    <div class="pa__inner">
 
-        <!-- Barra de progreso -->
-        <div class="pa__topbar">
-            <span class="pa__topbar-label">Capacidades</span>
-            <div class="pa__topbar-right">
-                <span class="pa__counter" aria-hidden="true"><span class="pa__counter-current">1</span>/<span class="pa__counter-total">6</span></span>
-                <div class="pa__progress" aria-hidden="true">
-                    <div class="pa__progress-fill"></div>
-                </div>
-            </div>
-        </div>
+        <span class="pa__eyebrow decode-text">[ CAPACIDADES ]</span>
 
-        <!-- Escenario -->
-        <div class="pa__stage">
+        <div class="pa__grid">
 
-            <!-- Flecha izquierda -->
-            <button class="pa__arrow pa__arrow--prev" type="button" aria-label="Capacidad anterior">
-                <span class="pa__arrow-label" aria-hidden="true">[&lt;]</span>
-            </button>
-
-            <div class="pa__viewport">
-
-                <div class="pa__track">
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 1 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="0">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/capacidades1.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Inteligencia Artificial</h3>
-                            <p class="pa__panel-desc">
-                                Desarrollamos modelos y asistentes inteligentes capaces de automatizar procesos,
-                                analizar información y potenciar la toma de decisiones.
-                            </p>
-                        </div>
-
-                    </article>
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 2 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="1">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/software.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Desarrollo de Software</h3>
-                            <p class="pa__panel-desc">
-                                Diseñamos y desarrollamos plataformas web, aplicaciones móviles y sistemas
-                                a medida adaptados a las necesidades de cada organización.
-                            </p>
-                        </div>
-
-                    </article>
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 3 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="2">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/iot.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Internet de las Cosas (IoT)</h3>
-                            <p class="pa__panel-desc">
-                                Integramos sensores, dispositivos y equipos para capturar información en tiempo real y optimizar procesos e infraestructura.
-                            </p>
-                        </div>
-
-                    </article>
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 4 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="3">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/datos.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Analítica de Datos</h3>
-                            <p class="pa__panel-desc">
-                                Transformamos grandes volúmenes de datos en indicadores, visualizaciones y modelos que facilitan decisiones estratégicas.
-                            </p>
-                        </div>
-
-                    </article>
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 5 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="4">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/automatizacion.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Automatización</h3>
-                            <p class="pa__panel-desc">
-                                Optimizamos procesos operativos y administrativos mediante flujos inteligentes que reducen tiempos, errores y costos.
-                            </p>
-                        </div>
-
-                    </article>
-
-                    <!-- ===================================================== -->
-                    <!-- CARD 6 -->
-                    <!-- ===================================================== -->
-
-                    <article class="pa__slide" data-index="5">
-
-                        <svg class="pa__slide-corner pa__slide-corner--tl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--bl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--tr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-                        <svg class="pa__slide-corner pa__slide-corner--br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
-
-                        <div class="pa__image">
-                            <video class="pa__video" muted loop playsinline preload="metadata">
-                                <source src="recursos/integracion.mp4" type="video/mp4">
-                            </video>
-                        </div>
-
-                        <div class="pa__panel">
-                            <h3 class="pa__panel-title">Integración de Sistemas</h3>
-                            <p class="pa__panel-desc">
-                                Conectamos aplicaciones, APIs, bases de datos y plataformas para crear ecosistemas tecnológicos unificados, escalables y seguros.
-                            </p>
-                        </div>
-
-                    </article>
-
+            <!-- ===================================================== -->
+            <!-- CARD 1 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">IA</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
                 </div>
 
-            </div>
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/capacidades1.mp4" type="video/mp4">
+                    </video>
+                </div>
 
-            <!-- Flecha derecha -->
-            <button class="pa__arrow pa__arrow--next" type="button" aria-label="Siguiente capacidad">
-                <span class="pa__arrow-label" aria-hidden="true">[&gt;]</span>
-            </button>
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Inteligencia Artificial</h3>
+                    <p class="pa__card-desc">
+                        Desarrollamos modelos y asistentes inteligentes capaces de automatizar tareas, analizar
+                        información y mejorar la toma de decisiones.
+                    </p>
+                </div>
+            </article>
+
+            <!-- ===================================================== -->
+            <!-- CARD 2 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">SOFTWARE</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
+                </div>
+
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/software.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Desarrollo de Software</h3>
+                    <p class="pa__card-desc">
+                        Diseñamos y construimos plataformas web, aplicaciones móviles y sistemas a medida
+                        adaptados a las necesidades de cada organización.
+                    </p>
+                </div>
+            </article>
+
+            <!-- ===================================================== -->
+            <!-- CARD 3 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">IOT</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
+                </div>
+
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/iot.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Internet de las Cosas (IoT)</h3>
+                    <p class="pa__card-desc">
+                        Integramos dispositivos y sensores para capturar información en tiempo real y optimizar
+                        el monitoreo de procesos e infraestructura.
+                    </p>
+                </div>
+            </article>
+
+            <!-- ===================================================== -->
+            <!-- CARD 4 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">DATOS</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
+                </div>
+
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/datos.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Analítica de Datos</h3>
+                    <p class="pa__card-desc">
+                        Transformamos grandes volúmenes de información en indicadores, visualizaciones y
+                        modelos que facilitan decisiones estratégicas.
+                    </p>
+                </div>
+            </article>
+
+            <!-- ===================================================== -->
+            <!-- CARD 5 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">AUTOMATIZACIÓN</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
+                </div>
+
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/automatizacion.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Automatización</h3>
+                    <p class="pa__card-desc">
+                        Optimizamos procesos operativos y administrativos mediante flujos inteligentes que
+                        reducen tiempos, errores y costos.
+                    </p>
+                </div>
+            </article>
+
+            <!-- ===================================================== -->
+            <!-- CARD 6 -->
+            <!-- ===================================================== -->
+            <article class="pa__card">
+                <div class="pa__card-head">
+                    <span class="pa__card-tag decode-text">SISTEMAS</span>
+                    <span class="pa__card-arrow" aria-hidden="true">
+                        <img class="pa__card-icon" src="icons/icons8-núcleo-48.png" alt="" loading="lazy" />
+                    </span>
+                </div>
+
+                <div class="pa__card-media">
+                    <video class="pa__video" muted loop playsinline autoplay preload="metadata">
+                        <source src="video/integracion.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="pa__card-foot">
+                    <h3 class="pa__card-title">Integración de Sistemas</h3>
+                    <p class="pa__card-desc">
+                        Conectamos aplicaciones, bases de datos y plataformas para crear ecosistemas
+                        tecnológicos unificados y escalables.
+                    </p>
+                </div>
+            </article>
 
         </div>
 
@@ -324,50 +346,35 @@
 </section>
 
   <!-- ============================================================
-       ⚠️ SECCIONES DE PRUEBA — CONTENIDO PLACEHOLDER TEMPORAL ⚠️
-       Solo existen para validar la transición de scroll (pin + scale
-       + fade) entre secciones. NO son diseño final. (Las secciones 02
-       y 03 ya se reemplazaron por contenido real, arriba; queda esta.)
-
-       Para reemplazarlas por las secciones reales:
-       1) Borrar este bloque completo (<main id="test-sections">...</main>)
-       2) Borrar el bloque CSS marcado "SECCIONES DE PRUEBA" en style.css
-       3) El bloque JS de la transición (marcado "TRANSICIÓN ENTRE
-          SECCIONES" en script.js) NO hay que tocarlo: solo agregarle
-          la clase "test-section" (o el nombre que seas) a las secciones
-          reales nuevas y va a seguir funcionando igual.
+       SECCIÓN 
   ============================================================ -->
-  <main id="test-sections">
-    <section class="test-section test-section--2" id="test-3">
-      <div class="cap2-content">
-        <span class="cap2-corner cap2-corner--tl" aria-hidden="true"></span>
-        <span class="cap2-corner cap2-corner--tr" aria-hidden="true"></span>
-        <span class="cap2-corner cap2-corner--bl" aria-hidden="true"></span>
-        <span class="cap2-corner cap2-corner--br" aria-hidden="true"></span>
-        <p class="cap2-title">
-          Reunimos <span class="cap2-highlight">experiencia</span>, <span class="cap2-highlight">tecnología</span>
-          y <span class="cap2-highlight">talento</span> para desarrollar soluciones
-          que resuelven los desafíos más complejos de la actualidad.
-        </p>
-      </div>
-    </section>
-
-  </main>
+  <section class="clarity" id="clarity">
+    <div class="clarity-content">
+      <!-- "SplitText" (ver script.js) fragmenta estos dos textos en un
+           <span>/<div> por palabra para animar el fade-in — mismo
+           criterio de accesibilidad ya usado en ".contact__title": el
+           original queda "aria-hidden" y hay un duplicado ".sr-only"
+           con el texto íntegro sin fragmentar al lado, mismo tag que
+           el original (preserva el <h2> real del título de cara a
+           navegación por encabezados). -->
+      <span class="clarity-eyebrow" aria-hidden="true">Definidos por la experiencia, diseñados para el futuro</span>
+      <span class="sr-only">Definidos por la experiencia, diseñados para el futuro</span>
+      <h2 class="clarity-title" aria-hidden="true">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
+      <h2 class="sr-only">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
+    </div>
+  </section>
 
 <!-- ============================================================
      S4 — SECCIÓN "PRODUCTOS"
-     (antes S6 en el sitio viejo — mismo diseño de tabs + filas tipo
-     Dragonfly, renombrado a "prod-*" y con id="s4-intro" para calzar
-     con los links de navegación que ya apuntaban ahí: navbar, menú
-     mobile y navegador lateral no necesitaron ningún cambio.)
 ============================================================ -->
 
-<section id="s4-intro" class="reveal-section">
+<section id="s4-intro">
     <div class="prod-container">
+        <span class="prod__eyebrow decode-text">[ Productos ]</span>
         <div class="prod-tabs" id="prod-tabs">
             <button class="prod-tab active" data-filter="all" type="button">Todo</button>
             <button class="prod-tab" data-filter="timbrame24" type="button">TimbraMe24</button>
-            <button class="prod-tab" data-filter="camia" type="button">CamIA</button>
+            <button class="prod-tab" data-filter="avatares" type="button">Avatares</button>
             <button class="prod-tab" data-filter="empleados-virtuales" type="button">Empleados Virtuales</button>
             <button class="prod-tab" data-filter="smart-meter" type="button">Smart Meter++</button>
             <button class="prod-tab" data-filter="domotica" type="button">Domótica</button>
@@ -379,7 +386,7 @@
 
             <div class="prod-row" data-category="timbrame24">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">TimbraMe24</div>
+                <div class="prod-row-title">TimbraMe24</div>
                 <div class="prod-row-desc">
                     Sistema de intercomunicación inteligente con acceso mediante QR, gestión remota
                     y control de ingresos sin instalaciones complejas.
@@ -390,9 +397,9 @@
                 </div>
             </div>
 
-            <div class="prod-row" data-category="camia">
+            <div class="prod-row" data-category="avatares">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">CamIA</div>
+                <div class="prod-row-title">Avatares</div>
                 <div class="prod-row-desc">
                     Atiende clientes, recomienda productos y gestiona pedidos mediante conversaciones
                     naturales, mejorando la experiencia gastronómica.
@@ -405,7 +412,7 @@
 
             <div class="prod-row" data-category="empleados-virtuales">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">Empleados Virtuales</div>
+                <div class="prod-row-title">Empleados Virtuales</div>
                 <div class="prod-row-desc">
                     Agentes inteligentes especializados que automatizan tareas, responden consultas
                     y colaboran con equipos de trabajo.
@@ -418,7 +425,7 @@
 
             <div class="prod-row" data-category="smart-meter">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">Smart Meter++</div>
+                <div class="prod-row-title">Smart Meter++</div>
                 <div class="prod-row-desc">
                     Captura y analiza datos en tiempo real para optimizar el consumo energético y
                     mejorar la eficiencia operativa.
@@ -431,7 +438,7 @@
 
             <div class="prod-row" data-category="domotica">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">Domótica</div>
+                <div class="prod-row-title">Domótica</div>
                 <div class="prod-row-desc">
                     Integra automatización, control de accesos, seguridad y monitoreo para crear
                     edificios más eficientes y preparados para el futuro.
@@ -444,7 +451,7 @@
 
             <div class="prod-row" data-category="pet24">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">Pet24</div>
+                <div class="prod-row-title">Pet24</div>
                 <div class="prod-row-desc">
                     Plataforma inteligente que conecta mascotas, familias y veterinarios mediante
                     identificación QR e historial digital.
@@ -457,7 +464,7 @@
 
             <div class="prod-row" data-category="gestion-riesgos">
                 <div class="prod-row-num" aria-hidden="true"></div>
-                <div class="prod-row-title js-scramble js-scramble-fast">Gestión de Riesgos</div>
+                <div class="prod-row-title">Gestión de Riesgos</div>
                 <div class="prod-row-desc">
                     Plataforma para monitorear incidentes, coordinar respuestas y emitir alertas
                     tempranas mediante datos en tiempo real.
@@ -487,35 +494,14 @@
 
   <!-- ============================================================
        SECCIÓN "I+D+I" — Proceso de Innovación
-       ----------------------------------------------------------------
-       Ahora son DOS <section> consecutivas e independientes:
-
-       1) ".idi-hero" (id="idi", ~60vh, sin timeline): eyebrow + título.
-          Reutiliza literalmente las clases ".cap2-content"/".cap2-title"/
-          ".cap2-highlight" de la Sección 03 ("Reunimos experiencia...")
-          para el título — mismo ancho máximo, alineación, interlineado,
-          responsive y el mismo efecto de aparición (scramble por
-          carácter, ver el bloque "Text Scramble en el título" de
-          script.js, ahora generalizado con querySelectorAll para que
-          alcance a cualquier ".cap2-title" del documento, este incluido).
-          Sigue siendo el punto de anclaje del nav ("#idi").
-
-       2) ".idi-timeline" (id="idi-timeline"): el timeline solo, ocupando
-          toda la pantalla. Es la que pinea (ver script.js) — el único
-          cambio de lógica que exige la separación en dos secciones es
-          que ese pin ahora apunta a "idi-timeline" en vez de "idi"
-          (una sección ya no puede pinear su propio título Y el timeline
-          por separado). GSAP/ScrollTrigger/pin/scrub/curva/indicador/
-          transición entre fases: sin cambios.
   ============================================================ -->
-  <section class="idi-hero" id="idi">
-    <div class="cap2-content">
-      <span class="idi__eyebrow">I+D+i</span>
-      <h2 class="cap2-title">Para nosotros la innovación es un <span class="cap2-highlight">proceso</span>, no un <span class="cap2-highlight">resultado</span>.</h2>
-    </div>
-  </section>
-
   <section class="idi-timeline" id="idi-timeline">
+    <canvas class="reunimos-canvas" aria-hidden="true"></canvas>
+    <div class="spotlight-grain"></div>
+    <div class="idi-caption">
+      <span class="idi-caption__eyebrow decode-text">[ I+D+i ]</span>
+      <p class="idi-caption__text">PARA NOSOTROS LA INNOVACIÓN ES UN PROCESO, NO UN RESULTADO.</p>
+    </div>
     <div class="idi__process" aria-hidden="true">
       <div class="idi__timeline">
         <svg class="idi__path-svg" viewBox="0 0 200 900" preserveAspectRatio="none">
@@ -525,10 +511,48 @@
             d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
         </svg>
         <div class="idi__indicator"></div>
-        <div class="idi__node" data-index="0"><span class="idi__node-num">01</span></div>
-        <div class="idi__node" data-index="1"><span class="idi__node-num">02</span></div>
-        <div class="idi__node" data-index="2"><span class="idi__node-num">03</span></div>
-        <div class="idi__node" data-index="3"><span class="idi__node-num">04</span></div>
+        <!-- Marcadores "CSS Reaction" (pedido explícito, reemplaza al círculo
+             que se pintaba solo) — markup tal cual el original en
+             "recursos/glb/core-css/css-reaction-update-responsive" (3 anillos
+             + 1 punto central), uno por fase. El color/estado "alcanzada" lo
+             sigue decidiendo la misma clase ".is-active" en ".idi__node" de
+             siempre (ver "updateNodes()" en script.js, sin cambios ahí). -->
+        <div class="idi__node" data-index="0">
+          <span class="idi__node-num">01</span>
+          <div class="circles">
+            <div></div>
+            <div></div>
+            <div></div>
+            <span></span>
+          </div>
+        </div>
+        <div class="idi__node" data-index="1">
+          <span class="idi__node-num">02</span>
+          <div class="circles">
+            <div></div>
+            <div></div>
+            <div></div>
+            <span></span>
+          </div>
+        </div>
+        <div class="idi__node" data-index="2">
+          <span class="idi__node-num">03</span>
+          <div class="circles">
+            <div></div>
+            <div></div>
+            <div></div>
+            <span></span>
+          </div>
+        </div>
+        <div class="idi__node" data-index="3">
+          <span class="idi__node-num">04</span>
+          <div class="circles">
+            <div></div>
+            <div></div>
+            <div></div>
+            <span></span>
+          </div>
+        </div>
       </div>
 
       <div class="idi__stages">
@@ -571,9 +595,278 @@
     </div>
   </section>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <!-- ============================================================
+       SECCION TRAYECTORIA 
+  ============================================================ -->
+  <section class="tr" id="trayectoria">
+    <div class="spotlight-grain"></div>
+    <div class="tr__inner">
+      <span class="tr__eyebrow decode-text">[ Cadipel ]</span>
+
+      <div class="tr__grid">
+        <div class="tr__cards" id="trCards">
+          <div class="tr__cards-track" id="trCardsTrack">
+            <div class="tr__card" data-index="0">
+              <div class="tr__card-top">
+                <h3 class="tr__card-title decode-text">Quiénes somos</h3>
+                <span class="tr__card-accent" aria-hidden="true"></span>
+              </div>
+              <div class="tr__pcb" aria-hidden="true">
+                <canvas class="tr__pcb-canvas"></canvas>
+                <div class="tr__pcb-loader" id="trPcbLoader">
+                  <span class="tr__pcb-spinner"></span>
+                </div>
+              </div>
+              <p class="tr__card-text">
+                Compañía internacional desarrolladora y fabricante de tecnología en electrónica y
+                software, con soluciones para industria, agro, fintech, seguridad y más.
+              </p>
+            </div>
+            <div class="tr__card" data-index="1">
+              <div class="tr__card-top">
+                <h3 class="tr__card-title decode-text">De la idea a la producción</h3>
+                <span class="tr__card-accent" aria-hidden="true"></span>
+              </div>
+              <div class="tr__arm" aria-hidden="true">
+                <canvas class="tr__arm-canvas"></canvas>
+                <div class="tr__arm-loader" id="trArmLoader">
+                  <span class="tr__arm-spinner"></span>
+                </div>
+              </div>
+              <p class="tr__card-text">
+                Acompañamos todo el ciclo de producto: diseño, prototipado rápido, DFM y fabricación
+                en serie, con alianza estratégica con Assisi SRL para escalar sin fricción.
+              </p>
+            </div>
+            <div class="tr__card" data-index="2">
+              <div class="tr__card-top">
+                <h3 class="tr__card-title decode-text">Nace Sophia</h3>
+                <span class="tr__card-accent" aria-hidden="true"></span>
+              </div>
+              <div class="tr__planet" aria-hidden="true">
+                <canvas class="tr__planet-canvas"></canvas>
+                <div class="tr__planet-loader" id="trPlanetLoader">
+                  <span class="tr__planet-spinner"></span>
+                </div>
+              </div>
+              <p class="tr__card-text">
+                Con esa misma base, Cadipel impulsa a Sophia: su unidad de Inteligencia Artificial e
+                innovación, para llevar ese estándar de ingeniería al terreno de la IA aplicada.
+              </p>
+            </div>
+            <div class="tr__card" data-index="3">
+              <div class="tr__card-top">
+                <h3 class="tr__card-title decode-text">Hoy</h3>
+                <span class="tr__card-accent" aria-hidden="true"></span>
+              </div>
+              <div class="tr__hud" aria-hidden="true">
+                <canvas class="tr__hud-canvas"></canvas>
+                <div class="tr__hud-loader" id="trHudLoader">
+                  <span class="tr__hud-spinner"></span>
+                </div>
+              </div>
+              <p class="tr__card-text">
+                Sophia y Cadipel comparten equipo, cultura y estándar de calidad: hardware y software
+                a medida de un lado, Inteligencia Artificial aplicada del otro.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tr__intro">
+          <p class="tr__desc">
+            SophIA nace dentro de Cadipel, compañía internacional que diseña, desarrolla y fabrica
+            tecnología en electrónica y software. Somos su unidad de Inteligencia Artificial e
+            innovación: el mismo estándar de ingeniería, ahora aplicado a la IA.
+          </p>
+
+          <a class="tr__link" href="https://www.cadipel.com.ar/" target="_blank" rel="noopener">
+            <span>Conocé Cadipel</span>
+            <span class="tr__link-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CONTACTO 
+  ============================================================ -->
+  <section class="contact" id="contacto">
+    <div class="contact__inner">
+      <div class="contact__intro">
+        <span class="contact__eyebrow decode-text">[ Contacto ]</span>
+        <!-- "SplitText" (ver script.js) fragmenta este título en un
+             <span> por palabra para animar el fade-in — eso rompe la
+             semántica para lectores de pantalla (pedido explícito, "no
+             omitir": parte central del efecto original, no un detalle
+             opcional). "aria-hidden" lo saca del árbol de accesibilidad
+             y el <h2 class="sr-only"> de acá abajo (texto íntegro, sin
+             fragmentar) es lo que un lector de pantalla realmente
+             percibe — MISMO tag "h2" que el original (no "p"): así se
+             preserva el heading real para quien navegue por
+             encabezados, no solo el texto. -->
+        <h2 class="contact__title" aria-hidden="true">Tenés un proyecto en mente?</h2>
+        <h2 class="sr-only">Tenés un proyecto en mente?</h2>
+      </div>
+
+      <form class="contact__form" id="contactForm" novalidate>
+        <div class="contact__row">
+          <div class="contact__field">
+            <label for="contactFirstName">Nombre *</label>
+            <input type="text" id="contactFirstName" name="firstName" autocomplete="given-name" required />
+          </div>
+          <div class="contact__field">
+            <label for="contactLastName">Apellido *</label>
+            <input type="text" id="contactLastName" name="lastName" autocomplete="family-name" required />
+          </div>
+        </div>
+
+        <div class="contact__row">
+          <div class="contact__field">
+            <label for="contactEmail">Email *</label>
+            <input type="email" id="contactEmail" name="email" autocomplete="email" required />
+          </div>
+          <div class="contact__field">
+            <label for="contactCompany">Empresa</label>
+            <input type="text" id="contactCompany" name="company" autocomplete="organization" />
+          </div>
+        </div>
+
+        <div class="contact__field">
+          <label for="contactTopic">¿En qué podemos ayudarte? *</label>
+          <select id="contactTopic" name="topic" required>
+            <option value="" disabled selected>Seleccioná una opción</option>
+            <option value="producto">Producto</option>
+            <option value="alianzas">Alianzas / Partnerships</option>
+            <option value="prensa">Prensa</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+
+        <div class="contact__field">
+          <label for="contactMessage">Mensaje *</label>
+          <textarea id="contactMessage" name="message" rows="4" required></textarea>
+        </div>
+
+        <div class="contact__submit-row">
+          <button class="contact__submit" type="submit">
+            <span>Enviar</span>
+            <span class="contact__submit-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/></svg>
+            </span>
+          </button>
+          <p class="contact__status" id="contactStatus" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============================= FOOTER =============================== -->
+  <!-- Rediseño (pedido explícito, réplica del footer de razorpay.com/
+       sprint/26): solo dos elementos, nada de pills/columnas de links/
+       divisor — ver style.css para el detalle de qué se sacó. Mismos
+       íconos/links de redes que el Home (".hero__socials"), copiados
+       tal cual, sin inventar ninguno nuevo. -->
+  <footer class="site-footer" id="footer">
+    <!-- Wordmark gigante, desliza sola hacia la izquierda en loop
+         infinito (pedido explícito) — dos copias idénticas del texto en
+         fila ("site-footer__wordmark-item") animadas con un solo
+         "translateX(-50%)" en el TRACK que las contiene: como la
+         segunda copia es igual a la primera, el loop no se nota (ver
+         "@keyframes footer-wordmark-scroll" en style.css). -->
+    <div class="site-footer__wordmark reveal-section" aria-hidden="true">
+      <div class="site-footer__wordmark-track">
+        <span class="site-footer__wordmark-item">SOPHIA TECH CORP</span>
+        <span class="site-footer__wordmark-item">SOPHIA TECH CORP</span>
+      </div>
+    </div>
+
+    <!-- Copyright + redes: pedido explícito, abajo de todo. -->
+    <div class="site-footer__bar">
+      <p class="site-footer__copy">Sophia Tech Corp © Todos los derechos reservados <span id="footerYear">2026</span></p>
+
+      <div class="site-footer__socials" aria-label="Redes sociales">
+        <a class="site-footer__social" href="https://www.instagram.com/sophiatechcorp" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a class="site-footer__social" href="https://www.linkedin.com/company/sophia-tech-corp" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- FIX (bug real, pedido explícito de otra sesión: "reutilizar el
+       cursor custom del Home" sobre las cards 3D de Trayectoria dejó
+       el círculo apareciendo miles de píxeles fuera de pantalla):
+       ".globe-cursor" es "position:fixed", que normalmente se posiciona
+       contra el VIEWPORT — pero vivía adentro de ".hero" (".hero-3d"),
+       y ".hero" recibe un "transform:scale()" propio en su transición
+       de salida (ver "outgoingPanels"/"initSectionTransitions()" en
+       script.js): CUALQUIER transform en un ancestro convierte a ESE
+       ancestro en el nuevo "contenedor" de todos los "position:fixed"
+       de adentro, en vez del viewport real — mientras solo se usaba
+       para el propio Home (donde ".hero" nunca está transformado
+       mientras el usuario lo está mirando) nunca se notó. Se saca de
+       acá abajo de todo, como hijo directo de "body" — ningún ancestro
+       de acá recibe transform nunca, así que vuelve a comportarse como
+       "fixed" de verdad en cualquier parte de la página. Mismo id
+       ("globeCursor"), mismas clases/CSS — earth-hero.js y el bloque
+       "CURSOR CUSTOM SOBRE LAS CARDS 3D" de script.js lo siguen
+       encontrando igual vía "getElementById", sin cambios ahí. -->
+  <div class="globe-cursor" id="globeCursor" aria-hidden="true">
+    <span class="globe-cursor__label">Click me</span>
+  </div>
+
+  <!-- Bump 3.12.5 -> 3.13.0 (pedido explícito: efecto de texto de
+       Contacto necesita "SplitText", plugin de pago hasta esa versión
+       — desde GSAP 3.13 es gratis para todos, pero recién ahí empezó a
+       publicarse). Los tres archivos pasan de cdnjs a jsdelivr (cdnjs
+       no tiene "SplitText" en ningún lado, ni pago ni gratis) para que
+       las cuatro libs vengan de la MISMA build, sin mezclar versiones.
+       Sin cambios de API entre 3.12.5 y 3.13.0 en gsap/ScrollTrigger/
+       ScrollToPlugin (verificado con el sitio completo después del
+       cambio, este es un sitio grande con ScrollTrigger en casi todas
+       las secciones). -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+  <!-- PDF.js (pedido explícito: poder pintar de negro la scrollbar del
+       modal "Explorar solución" — imposible con el visor nativo del
+       navegador dentro de un <iframe>, ver "renderPdfIntoModal()" en
+       script.js). Build UMD clásica (expone "window.pdfjsLib" como
+       global, igual que GSAP arriba) — "script.js" chequea si cargó
+       antes de usarla y, si no, vuelve sola al <iframe> de siempre. -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="script.js"></script>
+  <!-- Globo terráqueo WebGPU del Hero (pedido explícito) — módulo ES
+       aparte, independiente de GSAP/script.js de arriba (import map en
+       <head>). "defer" implícito por ser type="module": no bloquea el
+       parseo del resto de la página, y corre después de que el DOM esté
+       listo, igual que si estuviera al final del <body>. -->
+  <script type="module" src="earth-hero.js"></script>
+  <!-- Modelo 3D "SM_PCB_Modern_06_Low.glb" de la card "Quiénes somos"
+       (Trayectoria, pedido explícito) — módulo ES aparte, mismo
+       criterio que "earth-hero.js": WebGL liviano, autocontenido, no
+       toca script.js ni el resto de la sección/cards. -->
+  <script type="module" src="tr-pcb.js"></script>
+  <!-- Modelo 3D "black_honey_robotic_arm" de la card "De la idea a la
+       producción" (Trayectoria, pedido explícito, "igual que se hizo
+       en la primera card con el PCB") — módulo ES aparte, mismo
+       criterio que "tr-pcb.js"/"earth-hero.js". -->
+  <script type="module" src="tr-arm.js"></script>
+  <!-- Efecto "Planet Interior Energy Flow" de la card "Nace Sophia"
+       (Trayectoria, pedido explícito, "mismo criterio que las cards 1
+       y 2") — módulo ES aparte. Pedido explícito "unificar a una sola
+       versión de Three.js": usa el MISMO import map de arriba
+       ("three"/"three/examples/jsm/", three@0.184.0) que ya usan
+       "earth-hero.js"/"tr-pcb.js"/"tr-arm.js" — el efecto original
+       traía su propio import map con three@0.170.0 aparte, se adaptó
+       para no cargar una segunda instancia de la librería. -->
+  <script type="module" src="tr-planet.js"></script>
+  <!-- Modelo 3D "sci_fi_hud_quillvr" de la card "Hoy" (Trayectoria,
+       pedido explícito, "mismo criterio que las cards anteriores") —
+       módulo ES aparte. -->
+  <script type="module" src="tr-hud.js"></script>
 </body>
 </html>

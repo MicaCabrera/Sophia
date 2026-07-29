@@ -3,6 +3,11 @@
   --black: #000000;   /* fondo principal — ~70% de la superficie del sitio */
   --blue-light: #077DB3; /* color de énfasis: solo palabras clave, estados activos, indicadores, barras/líneas activas */
   --blue-dark: #077DB3;
+  /* Alias histórico: varias reglas ya escritas (".idi__stage-num::before",
+     ".dfy-nav__dot", etc.) referencian "--color-primary" en vez de "--blue-light" — se define acá con el mismo valor
+     para que esas reglas (que hasta ahora resolvían a un valor inválido, sin fallback) pinten
+     el azul que siempre debieron pintar, sin tener que reescribir cada punto de uso. */
+  --color-primary: #077DB3;
   --bone: #ffffff;    /* texto principal: títulos, headings, elementos principales, navegación */
   --white: #ffffff;
   --color-gray: #E5E5E5; /* texto secundario: párrafos, indicadores, numeración, textos auxiliares, etiquetas */
@@ -32,11 +37,31 @@ html {
   scroll-behavior: auto;
 }
 
+/* Blanco como salvaguarda general de fondo (no el color "correcto" de
+   ninguna transición puntual — ver el fix real, genérico, en
+   "syncPinSpacerBackgrounds()" en script.js: corrige el color real
+   detrás de CADA sección pineada, sea cual sea). */
 body {
   font-family: var(--font-body);
-  background: var(--black);
+  background: #ffffff;
   color: var(--bone);
   overflow-x: hidden;
+}
+
+/* Oculta contenido visualmente sin sacarlo del árbol de accesibilidad
+   ("sr" = "screen-reader") — pedido explícito, mismo patrón estándar
+   que https://css-tricks.com/inclusively-hidden/. Usado para duplicar
+   texto que "SplitText" fragmenta en spans para animar (ver
+   ".contact__title"/script.js): el original queda "aria-hidden", esto
+   es lo que un lector de pantalla percibe en su lugar. */
+.sr-only:not(:focus):not(:active) {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 img {
@@ -56,40 +81,465 @@ a {
   height: 100vh;
   min-height: 560px;
   overflow: hidden;
-}
-
-.hero__bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.hero__image {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+  /* Pedido explícito: "eliminar completamente la imagen de fondo...
+     mantener un fondo completamente negro" — antes lo daba la imagen
+     (".hero__image"), ahora es un color sólido. Capa de resguardo
+     detrás de "#earth-canvas" (pedido explícito, "para que durante la
+     transición del scroll no aparezcan áreas blancas"): el canvas usa
+     "alpha:false" (ver earth-hero.js) y la propia escena 3D ya tiene su
+     fondo en negro sólido también (mismo color, "scene.background" en
+     earth-hero.js) — este negro de acá es el que se ve durante el
+     instante de carga antes de que el renderer pinte el primer frame. */
   background: var(--black);
 }
 
-.hero__image img {
+/* Globo terráqueo WebGPU interactivo (pedido explícito) — ocupa todo el
+   Hero para que el seguimiento del cursor reaccione en cualquier punto
+   de la sección (no solo encima del globo), igual que el resto de la
+   composición ya usa el mouse sobre toda la sección (ver
+   "attachSpotlightCanvas()" en script.js, mismo criterio). El
+   encuadre/tamaño real del planeta dentro de ese lienzo lo controla la
+   cámara en earth-hero.js, no el tamaño de este contenedor — así nunca
+   toca los bordes ni sale del viewport sin importar el aspect-ratio del
+   dispositivo.
+   "z-index:1" lo deja por debajo de ".hero__title-wrap" (2) y
+   ".hero__texts" (2): el título y los íconos sociales siempre quedan
+   por encima, nunca tapados — el globo es fondo, el texto va superpuesto
+   arriba (pedido explícito). Los z-index de acá abajo (canvas/hud/loader)
+   solo compiten ENTRE ELLOS, adentro de este contenedor — ".hero-3d" ya
+   crea su propio contexto de apilamiento (position+z-index), así que
+   nunca se cruzan con el z-index:2/3 de fuera. */
+.hero-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* Sobre "#earth-canvas" en desktop, earth-hero.js pone "cursor:none" y
+     lo reemplaza por el cursor custom ".globe-cursor" — este valor acá es
+     solo el estado neutro antes de que corra esa lógica (y el real en
+     touch, donde no hay cursor custom). */
+  cursor: default;
+}
+
+#earth-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 35%;
+  display: block;
 }
 
-.hero__overlay {
+/* "touch-action" de "#earth-canvas" se maneja 100% en JS (ver
+   "earth-hero.js"), no acá: "new OrbitControls(camera, canvas)" ya deja
+   "canvas.style.touchAction = 'none'" como estilo INLINE al conectarse
+   (código propio de la librería) — un inline style siempre le gana a
+   cualquier regla de esta hoja, con o sin selector de clase, así que una
+   regla acá sería directamente inefectiva. earth-hero.js pisa ese inline
+   style con "pan-y" para el gesto de 2 dedos tipo Google Maps (1 dedo
+   scrollea la página nativo, 2 dedos rotan/zoomean el globo). */
+
+/* HUD de beacons/etiquetas de ciudades — lo llena earth-hero.js en
+   runtime (uno por ciudad de CINEMATIC_LOCATIONS, ver ese archivo).
+   "pointer-events:none" en el contenedor: los beacons son decorativos,
+   nunca deben interceptar clicks/drag destinados al globo o al resto
+   del Hero. */
+#hud-container {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to top, rgba(8, 7, 8, 0.75) 0%, rgba(8, 7, 8, 0.15) 32%, rgba(8, 7, 8, 0.1) 60%, rgba(8, 7, 8, 0.55) 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* Título centrado en toda la sección */
+.beacon-point {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate3d(0, 0, 0) translate(-50%, -50%);
+  opacity: 0;
+  display: none;
+  pointer-events: none;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.beacon-core {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  background-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  z-index: 2;
+}
+
+.beacon-ping {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.1);
+  animation: earth-beacon-ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.beacon-ring {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+@keyframes earth-beacon-ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beacon-ping {
+    animation: none;
+  }
+}
+
+.label-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate3d(0, 0, 0);
+  opacity: 0;
+  display: none;
+  pointer-events: none;
+  z-index: 2;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.label-align {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-align-start {
+  align-items: flex-start;
+}
+
+.label-align-end {
+  align-items: flex-end;
+}
+
+.label-title {
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.label-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label-dot {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Loader sci-fi mientras earth-hero.js inicializa el renderer WebGPU/WebGL
+   y carga las texturas del planeta — se autooculta al terminar (ver
+   "onLoad()" en earth-hero.js). "z-index:3" lo deja igualado a los hints
+   "entrar"/"salir" (arriba de todo dentro de ".hero-3d"), tapando el
+   canvas mientras carga. */
+#loader {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: 'DM Mono', monospace;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: #000000;
+  transition: opacity 1.2s ease-in-out, filter 1.2s ease-in-out;
+}
+
+.loader-bg-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(0, 0, 0, 0.9) 60%, #000000 100%);
+}
+
+.loader-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 70%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 70%, transparent 100%);
+}
+
+.loader-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.spinner-outer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8rem;
+  height: 8rem;
+  margin-top: -4rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-right-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  animation: earth-spin-cw 8s linear infinite;
+}
+
+.spinner-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10rem;
+  height: 10rem;
+  margin-top: -4rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+  animation: earth-spin-ccw 12s linear infinite;
+}
+
+@keyframes earth-spin-cw {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes earth-spin-ccw {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+.loader-counter {
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.loader-percent {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.loader-percent-symbol {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: 0.25rem;
+}
+
+.loader-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.loader-message {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.8);
+  height: 1rem;
+}
+
+.loader-bar-bg {
+  width: 16rem;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin-top: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.loader-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background-color: rgba(255, 255, 255, 0.8);
+  transition: width 0.2s ease-out;
+}
+
+@media (max-width: 640px) {
+  .loader-bar-bg {
+    width: 12rem;
+  }
+}
+
+/* Panel de debug de earth-hero.js (lil-gui) — oculto por defecto en el
+   sitio en vivo (ver "GUI.SHOW" en earth-hero.js), esto solo cubre el
+   caso de abrirlo a mano con "?settings=true" para que no quede
+   atropellado por el resto de la tipografía del sitio. */
+.lil-gui {
+  font-family: monospace !important;
+  z-index: 1000 !important;
+}
+
+/* Cursor personalizado "CLICK ME" sobre el globo (pedido explícito,
+   reemplaza el hint de texto que había antes + el cursor nativo del mouse
+   mientras está sobre "#earth-canvas", ver "canvas.style.cursor='none'"
+   en earth-hero.js). Círculo minimalista estilo HUD/beacons (borde fino
+   translúcido, blanco/gris). La POSICIÓN la escribe earth-hero.js (Home)
+   o el bloque "CURSOR CUSTOM SOBRE LAS CARDS 3D" de script.js
+   (Trayectoria) directo en "transform" en cada frame (con su propio
+   lerp/suavizado) — por eso acá NO hay transition sobre "transform"
+   (chocaría con ese suavizado); solo transicionan opacidad/tamaño/fondo,
+   que se cambian por clases discretas ("is-visible"/"is-hover"/
+   "is-dismissed"/"is-plain"), no en cada frame.
+
+   MARKUP: vive como hijo directo de "body" al final de index.html (NO
+   adentro de ".hero-3d", a pesar de que originalmente nació ahí) — fix
+   real: "position:fixed" se posiciona contra el ancestro MÁS CERCANO
+   que tenga un "transform" propio, no necesariamente el viewport; con
+   ".hero" recibiendo "transform:scale()" en su transición de salida
+   (ver "initSectionTransitions()" en script.js), el cursor quedaba
+   posicionado relativo a un ".hero" ya scrolleado y escalado en vez de
+   la pantalla real — invisible/con las coordenadas rotas en cuanto se
+   usaba fuera del Home (ver detalle en el comentario de index.html).
+   "z-index:60": ya no vive "adentro del contexto de apilamiento propio
+   de .hero-3d" (antes bastaba con 4) — ahora compite a nivel de toda la
+   página, así que necesita quedar por encima de secciones/cards, pero
+   bien por debajo del nav/menú (900-1000, ver ".dfy-nav__panel"/
+   ".menu-overlay"), que sí necesitan ganarle siempre. */
+.globe-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0);
+  transition: opacity 0.25s ease, width 0.3s ease, height 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+}
+
+.globe-cursor.is-visible {
+  opacity: 1;
+}
+
+.globe-cursor.is-hover {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Achicado (pedido explícito) solo sobre las cards 3D de Trayectoria:
+   ".is-plain" nunca se agrega en el Home (ver ".globe-cursor.is-plain
+   .globe-cursor__label" arriba y el bloque "CURSOR CUSTOM SOBRE LAS
+   CARDS 3D" en script.js), así que ".is-hover.is-plain" identifica sin
+   ambigüedad el hover sobre una card — más específico que ".is-hover"
+   solo, gana la cascada sin tocar el tamaño del hover en el Home. */
+.globe-cursor.is-hover.is-plain {
+  width: 42px;
+  height: 42px;
+}
+
+/* FIX (pedido explícito: "se ve la frase click me que no debe estar en
+   las cards") — el texto pasa a estar OCULTO por defecto (antes era al
+   revés: visible salvo que algo lo apague, vía ".is-dismissed"/
+   ".is-plain"). Con el default "visible", cualquier estado de clases que
+   quedara pegado del Home (ej. el mouse queda quieto sobre "#earth-
+   canvas" mientras el usuario scrollea con la rueda — el Hero se pinea y
+   escala en su transición de salida, así que el "mouseleave" del canvas
+   puede no llegar a dispararse) mostraba "Click me" al entrar a
+   Trayectoria aunque nunca se haya agregado ".is-plain". Ahora hace
+   falta que earth-hero.js agregue ".is-label" a propósito (solo en el
+   mouseenter de "#earth-canvas", ver ese archivo) para que el texto
+   aparezca — ningún estado accidental/heredado puede mostrarlo. */
+.globe-cursor__label {
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.globe-cursor.is-label .globe-cursor__label {
+  opacity: 1;
+}
+
+.globe-cursor.is-dismissed .globe-cursor__label {
+  opacity: 0;
+}
+
+/* Mismo cursor custom, reutilizado sobre las 4 cards 3D de Trayectoria
+   (PCB/brazo/planeta/HUD, pedido explícito) — "mismo tamaño, color,
+   seguimiento del mouse", solo sin el texto interior: "is-plain" oculta
+   ".globe-cursor__label" directamente (a diferencia de "is-dismissed",
+   que solo la desvanece tras la primera interacción en el Home — acá
+   nunca debe aparecer, ni antes ni después de interactuar). Ver el
+   bloque "CURSOR CUSTOM SOBRE LAS CARDS 3D" en script.js. */
+.globe-cursor.is-plain .globe-cursor__label {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .globe-cursor {
+    display: none;
+  }
+}
+
+/* Etiqueta editorial centrada abajo (pedido explícito, antes título
+   grande centrado en toda la sección) — separada del borde inferior
+   ~60–80px (clamp) para "convivir con el modelo sin competir
+   visualmente": el modelo ocupa el centro/45–60% del Hero, esta franja
+   queda libre debajo de él en cualquier alto de viewport razonable. */
 .hero__title-wrap {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: clamp(60px, 8vh, 80px);
   z-index: 2;
   display: flex;
   align-items: center;
@@ -98,45 +548,44 @@ a {
   pointer-events: none;
 }
 
+/* Mismo estilo EXACTO que "[ PRODUCTOS ]"/"[ I+D+i ]" (".prod__eyebrow"/
+   ".idi-caption__eyebrow" — pedido explícito "no crear un estilo
+   nuevo"): DM Mono 700, 12px, tracking 0.32em, mayúsculas, blanco. Solo
+   agrega "text-align:center" (las otras van alineadas a un lado; esta
+   va centrada, pedido explícito) — nada de tipografía nueva. */
 .hero__title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(2rem, 5.2vw, 4rem);
-  line-height: 1.15;
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
   color: var(--bone);
   text-align: center;
-  max-width: 900px;
-  text-shadow: 0 4px 30px rgba(8, 7, 8, 0.45);
+  margin: 0;
 }
 
-/* Textos pegados abajo del todo, izquierda / derecha */
+/* Columna de íconos sociales, pegada al borde derecho y centrada
+   verticalmente (pedido explícito — antes era una fila pegada abajo a
+   la derecha). "top:50%"+"translateY(-50%)" la centra contra el alto
+   real del Hero sin importar el viewport; al no depender de "bottom",
+   no compite con ".hero__title-wrap" (el "[ SOPHIA TECH CORP ]" de
+   abajo, centrado horizontal) en ningún tamaño de pantalla razonable —
+   mismo criterio en mobile, ver "@media" más abajo (pedido explícito
+   "que no se superponga con el texto"). */
 .hero__texts {
   position: absolute;
-  left: 0;
+  top: 50%;
   right: 0;
-  bottom: 0;
   z-index: 2;
   display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  gap: 32px;
-  padding: 0 40px 48px;
-}
-
-.hero__text {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 1.5;
-  max-width: 380px;
-}
-
-.hero__text--left {
-  color: var(--color-gray); /* párrafo → gris secundario de la paleta */
+  transform: translateY(-50%);
+  padding: 0 40px;
 }
 
 .hero__socials {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 20px;
 }
@@ -215,7 +664,7 @@ a {
 
 .dfy-nav__logo {
   justify-self: start;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
   font-size: 18px;
   letter-spacing: 0.5px;
@@ -282,13 +731,17 @@ a {
   outline-offset: 3px;
 }
 
-/* --- Panel desplegable --- */
+/* --- Panel desplegable ---
+   Pedido explícito: panel más compacto (ancho/alto/espaciados/tipografía
+   reducidos ~20-25%, misma estética/jerarquía) — antes 520px de ancho y
+   filas de 22px 28px con label a 19px, ahora escalado hacia abajo pero
+   guardando la misma proporción num-chico/label-grande entre sí. */
 .dfy-nav__panel {
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(520px, 88vw);
+  width: min(400px, 86vw);
   background: rgba(8, 12, 18, 0.92);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
@@ -304,14 +757,19 @@ a {
   flex-direction: column;
 }
 
+/* Relleno celeste al pasar el cursor (pedido explícito: "mismo efecto
+   que las tabs de Productos" — ver ".prod-tab.active" en style.css,
+   mismo color #2484c6 y misma duración 0.25s de esa transición). */
 .dfy-nav__row {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 34px 1fr 34px;
   align-items: center;
-  padding: 22px 28px;
+  padding: 14px 22px;
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: transparent;
+  transition: background-color 0.25s ease;
 }
 
 .dfy-nav__row:last-child {
@@ -319,29 +777,74 @@ a {
 }
 
 .dfy-nav__num {
-  font-family: var(--font-display);
-  font-size: 11px;
+  font-family: var(--font-body);
+  font-size: 10px;
   color: var(--color-gray);
   font-variant-numeric: tabular-nums;
+  transition: color 0.25s ease;
 }
 
 .dfy-nav__label {
-  font-family: var(--font-display);
-  font-size: 19px;
+  font-family: var(--font-body);
+  font-size: 15px;
   letter-spacing: 0.01em;
   text-align: center;
   color: var(--bone);
-  transition: color 0.3s ease;
+  transition: color 0.25s ease;
+}
+
+.dfy-nav__row:hover,
+.dfy-nav__row:focus-visible {
+  background-color: #2484c6;
 }
 
 .dfy-nav__row:hover .dfy-nav__label,
-.dfy-nav__row:focus-visible .dfy-nav__label {
-  color: var(--color-primary);
+.dfy-nav__row:hover .dfy-nav__num,
+.dfy-nav__row:focus-visible .dfy-nav__label,
+.dfy-nav__row:focus-visible .dfy-nav__num {
+  color: #05070b;
 }
 
 .dfy-nav__row:focus-visible {
   outline: 2px solid var(--blue-light);
   outline-offset: -2px;
+}
+
+/* Fila del logo Cadipel: más aire arriba/abajo que las filas de texto
+   (pedido explícito), ya que una imagen sola se siente más apretada con
+   el mismo padding vertical de 14px que usan las filas de texto. */
+.dfy-nav__row--brand {
+  padding-top: 22px;
+  padding-bottom: 22px;
+  /* No interactivo (pedido explícito "sacarle hover y que no sea un
+     link, solo es el logo") — ya es un "<div>" en vez de "<a>" (ver
+     index.html), esto solo evita que el cursor/pointer sugiera que se
+     puede clickear. */
+  cursor: default;
+}
+
+/* Cancela el fondo celeste de ".dfy-nav__row:hover"/":focus-visible" de
+   arriba SOLO para esta fila (pedido explícito) — sigue siendo
+   ".dfy-nav__row" para heredar el resto (línea divisoria, layout de
+   grid), pero ya no debe resaltar al pasar el mouse. */
+.dfy-nav__row--brand:hover,
+.dfy-nav__row--brand:focus-visible {
+  background-color: transparent;
+}
+
+/* La fila en sí ya es ".dfy-nav__row" (hereda línea divisoria, layout
+   de grid — el hover se cancela arriba), esto solo centra la imagen: sin
+   ".dfy-nav__num" ocupando la primer columna del grid de 3 columnas
+   ("34px 1fr 34px"), el auto-placement la dejaría pegada a la izquierda
+   en vez de centrada — "grid-column:1/-1" la hace ocupar las tres
+   columnas y "justify-self:center" la centra adentro, mismo eje que
+   ".dfy-nav__label" en las filas de arriba. */
+.dfy-nav__brand-logo {
+  grid-column: 1 / -1;
+  justify-self: center;
+  height: 16px;
+  width: auto;
+  display: block;
 }
 
 /* ============ NAV — Island (GSAP, solo mobile) ============ */
@@ -377,7 +880,7 @@ a {
   flex-shrink: 0;
   opacity: 0;
   margin-left: 0.85rem;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
   font-size: 14px;
   letter-spacing: 0.4px;
@@ -463,7 +966,7 @@ a {
   border-radius: 10px;
   text-decoration: none;
   color: var(--bone);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
   font-size: 0.85rem;
   letter-spacing: 0.4px;
@@ -504,12 +1007,32 @@ a {
   color: var(--blue-light);
 }
 
-/* ============================================================
-   SECCIÓN "CAPACIDADES" — migrada tal cual del sitio anterior.
-   Todo este bloque (incluido su propio :root con variables --color-*
-   y las clases .reveal-section / .s6-index de las que depende) es
-   CÓDIGO ORIGINAL SIN MODIFICAR, copiado del sitio viejo.
-   ============================================================ */
+/* Logo Cadipel — pedido explícito "sacarle hover y que no sea un link,
+   solo es el logo": ya NO es ".menu-link" (ver index.html), así que ya
+   no hereda nada de esa clase (ni el hover/foco de texto, que no
+   aplicaba de todos modos al ser solo una imagen, ni el layout). Queda
+   totalmente autocontenido acá: layout centrado (en vez del
+   "space-between" label+número de las filas de texto), y replica a
+   mano el borde redondeado inferior + la línea divisoria superior que
+   antes conseguía gratis vía ".menu-link:last-child"/".menu-link +
+   .menu-link" (siempre es la última fila del panel). */
+.menu-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid rgba(7, 125, 179, 0.12);
+  border-radius: 0 0 10px 10px;
+  cursor: default;
+  /* Más aire arriba/abajo que las filas de texto (pedido explícito),
+     mismo criterio que ".dfy-nav__row--brand" en el panel desktop. */
+  padding: 1.3rem 1.1rem;
+}
+
+.menu-brand img {
+  height: 16px;
+  width: auto;
+  display: block;
+}
 
 /* ============================================================================
    SCROLL REVEAL — versión IntersectionObserver
@@ -538,472 +1061,375 @@ a {
   filter: blur(0px);
 }
 
-.s6-index {
-  font-family: 'DM Mono', 'Instrument Sans', sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  color: rgba(245, 246, 247, 0.35);
-  white-space: nowrap;
-}
-
-.s6-index b {
-  color: #f5f6f7;
-  font-weight: 700;
-}
-
 /* ============================================================================
-   NUEVA SECCIÓN "CAPACIDADES" (id="s3-caps") — stack de cartas
+   SECCIÓN "CAPACIDADES" (id="s3-caps") — grilla editorial premium
    ----------------------------------------------------------------------------
-   Reemplaza el CSS del viejo carrusel de Capacidades. Usa su propio prefijo
-   de clases (.pa__*) por lo que no colisiona con nada del resto del sitio.
-   Hereda la tipografía (Inter) y el fondo oscuro del body del sitio real,
-   para mantener la misma estética premium/tecnológica.
+   Rediseño total: reemplaza el viejo carrusel horizontal pineado por una
+   grilla de 6 cards estilo "madebybeings.com/work" — fondo negro, esquinas
+   rectas, textura de puntos sutil, video protagonista, reveal/hover/tilt/
+   parallax vía GSAP (ver initCapacidadesGrid() en script.js). Reutiliza los
+   tokens reales del sitio (--black/--bone/--color-gray/--blue-light,
+   definidos en el :root de arriba) en vez de duplicar variables propias.
+   Tipografía: 'Geist Mono' para etiquetas/títulos (pedido explícito para
+   esta sección), 'Instrument Sans' para las descripciones — mismo patrón
+   mono/body que usa el resto del sitio con DM Mono.
    ============================================================================ */
 
-/* ==========================================================================
-   VARIABLES GLOBALES
-   ========================================================================== */
-:root {
-  --color-primary: #077DB3;        /* color de énfasis de la paleta */
-  --color-primary-deep: #077DB3;   /* la paleta define un solo azul: sin variante para degradés */
-  --color-primary-soft: #077DB31a; /* versión translúcida del color principal */
-  --color-bg: #000000;             /*/fondo seccion capacidades
-    --color-surface: #ffffff;        /* panel blanco flotante */
-  --color-text: #ffffff;           /* texto claro sobre fondo oscuro */
-  --color-text-muted: var(--color-gray); /* gris secundario de la paleta */
-  --color-track: rgba(229, 229, 229, 0.16); /* línea base muy sutil de la barra de progreso */
-  --radius-lg: 8px;
-  --radius-md: 8px;
-  --ease-premium: cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-/* ==========================================================================
-   SECCIÓN PRINCIPAL "CAPACIDADES"
-   Ocupa 100vh y queda fija (pin) mientras GSAP/ScrollTrigger controla
-   el avance entre las 6 tarjetas.
-   ========================================================================== */
 .pa {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh; /* evita el salto/espacio negro al mostrarse/ocultarse la barra de Safari iOS */
-  display: flex; /* .pa__inner usa height:100%: necesita un padre flex para resolver su alto */
-  overflow: hidden;
-  background: var(--color-bg);
+  background: var(--black);
+  padding: clamp(80px, 11vh, 140px) 0;
+  box-sizing: border-box;
 }
 
 .pa__inner {
-  height: 100%;
   width: 100%;
   max-width: 1320px;
   margin: 0 auto;
-  padding: clamp(26px, 4.4vw, 56px) clamp(24px, 4.4vw, 56px) clamp(48px, 7vw, 88px);
-  display: flex;
-  flex-direction: column;
-  /* Centra el bloque (fila superior + escenario) verticalmente dentro
-     de la sección, en vez de quedar pegado arriba con aire libre abajo. */
-  justify-content: center;
-  gap: clamp(12px, 1.6vw, 20px);
+  padding: 0 clamp(24px, 4.4vw, 56px);
+  box-sizing: border-box;
+}
+
+/* Etiqueta "[ CAPACIDADES ]" — mismo formato entre-corchetes que la
+   etiqueta de cada card, a nivel de sección. */
+.pa__eyebrow {
+  display: block;
+  font-family: 'Geist Mono', 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-gray);
+  margin: 0 0 clamp(32px, 5vw, 56px);
 }
 
 /* --------------------------------------------------------------------------
-   FILA SUPERIOR
+   GRILLA — 3 columnas en desktop, mucho aire entre cards (editorial)
    -------------------------------------------------------------------------- */
-.pa__topbar {
+.pa__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(28px, 3.6vw, 56px);
+  /* Perspectiva compartida: el leve rotateX/rotateY de cada card (JS) se
+     apoya en este punto de fuga común para que la sensación de profundidad
+     sea consistente entre todas las cards de la grilla. */
+  perspective: 1600px;
+}
+
+/* --------------------------------------------------------------------------
+   CARD — proporción vertical ~4:5, fondo negro, esquinas rectas
+   -------------------------------------------------------------------------- */
+.pa__card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: var(--black);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+  padding: clamp(18px, 1.8vw, 26px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+  box-sizing: border-box;
+  overflow: hidden;
+  /* transform/opacity únicamente: reveal, hover-lift, tilt y video-scale
+     se animan todos desde JS con estas dos propiedades (ver script.js) —
+     nada que dispare reflow. */
+  will-change: transform;
+}
+
+/* Textura de puntos extremadamente sutil, distribuida en toda la card
+   (no solo el video) — un solo radial-gradient repetido, no un degradado
+   de color: no hay transición de tono en ningún punto de la superficie. */
+.pa__card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 1px);
+  background-size: 14px 14px;
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pa__card-head {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
 }
 
-.pa__topbar-right {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-/* Etiqueta "■ Capacidades" — mismo lenguaje visual que ".idi__eyebrow"
-   (cuadrado CSS-only + texto pequeño en mayúsculas). Reemplaza al texto
-   "Seguí scrolleando" y a los "01 CAPACIDAD" de cada card. */
-.pa__topbar-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'DM Mono', monospace;
-  font-weight: 700;
+/* Etiqueta "[ IA ]" de cada card */
+.pa__card-tag {
+  font-family: 'Geist Mono', 'DM Mono', monospace;
+  font-weight: 500;
   font-size: 11px;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-gray);
 }
 
-.pa__topbar-label::before {
-  content: "";
-  display: inline-block;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  background: var(--color-primary);
-}
-
-/* --------------------------------------------------------------------------
-   CONTADOR (ej: 1/6) — a la izquierda de la barra de progreso
-   -------------------------------------------------------------------------- */
-.pa__counter {
-  flex-shrink: 0;
-  margin-right: 14px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--color-gray); /* numeración → gris secundario de la paleta */
-  font-variant-numeric: tabular-nums; /* que no "salte" el ancho al cambiar de número */
-}
-
-.pa__counter-current {
-  color: #fff;
-}
-
-/* --------------------------------------------------------------------------
-   BARRA DE PROGRESO
-   -------------------------------------------------------------------------- */
-.pa__progress {
-  flex-shrink: 0;
-  width: clamp(120px, 14vw, 190px);
-  height: 1.5px;
-  border-radius: 0;
-  background: var(--color-track); /* línea base gris muy sutil */
-  overflow: hidden;
-}
-
-.pa__progress-fill {
-  width: 0%;
-  height: 100%;
-  border-radius: 0;
-  background: var(--color-primary);
-  will-change: width;
-}
-
-/* --------------------------------------------------------------------------
-   ESCENARIO: imagen + panel + flechas
-   -------------------------------------------------------------------------- */
-.pa__stage {
-  position: relative;
-  flex: 0 1 auto;
-  width: 100%;
-  height: min(460px, 62vh);
-  /* Volvemos a "hidden": el preview de la siguiente card se logra
-     recortando el track (no asomando por fuera del escenario). */
-  overflow: hidden;
-}
-
-.pa__viewport {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  /* Deja el pan vertical 100% nativo del navegador; el horizontal (swipe
-     entre cards) lo maneja JS. Evita que ambos gestos compitan en iOS Safari. */
-  touch-action: pan-y;
-}
-
-.pa__track {
-  display: flex;
-  height: 100%;
-  /* Separación real entre cards: esto es lo que hace que la siguiente
-     NO quede pegada a la card activa, sino claramente separada, como si
-     asomara desde fuera del viewport. */
-  gap: clamp(20px, 3vw, 100px);
-  will-change: transform;
-}
-
-.pa__slide {
-  position: relative;
-  flex: 0 0 88%;
-  height: 100%;
-}
-
-/* Esquinas tipo mira/crosshair, mismo recurso visual que las cards de
-   I+D+I (#s6-etapas .s6-cr-corner), adaptado al tamaño de esta card
-   horizontal más grande. */
-   
-.pa__slide-corner {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  color: var(--color-gray); /* brackets → gris secundario de la paleta */
-  z-index: 3;
-  pointer-events: none;
-}
-.pa__slide-corner--tl { top: -11px; left: -11px; }
-.pa__slide-corner--bl { bottom: -11px; left: -11px; }
-.pa__slide-corner--tr { top: -11px; right: -11px; }
-.pa__slide-corner--br { bottom: -11px; right: -11px; }
-
-/* Imagen a pantalla completa dentro de la tarjeta */
-.pa__image {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: #1a1d21;
-}
-/* --------------------------------------------------------------------------
-   VIDEO DE FONDO DE LA CARD
--------------------------------------------------------------------------- */
-
-
-.pa__video{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-    transform:scale(1.02);
-    transition:transform 8s linear;
-}
-
-.pa__slide.is-active .pa__video{
-    transform:scale(1.08);
-}
-
-.pa__image::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
-        to top,
-        rgba(0,0,0,.45),
-        rgba(0,0,0,.08) 45%,
-        transparent
-    );
-    pointer-events:none;
-}
-
-/* Panel flotante, abajo a la izquierda, sobre la imagen */
-
-.pa__panel {
-  position: absolute;
-  left: clamp(14px, 2.4vw, 32px);
-  bottom: clamp(14px, 2.4vw, 32px);
-  max-width: min(360px, 36%);
-  background: rgba(2, 21, 36, 0.18);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  padding: clamp(16px, 2.1vw, 28px);
-
-  box-shadow: 
-      0 10px 30px rgba(0,0,0,.12),
-      0 30px 80px rgba(0,0,0,.28),
-      inset 0 0px 0px rgba(255,255,255,.20);
-
-  color:#ffffff;
-  transition: all .45s cubic-bezier(.22,.61,.36,1);
-}
-
-.pa__panel-title {
-  font-family: 'DM Mono', 'Instrument Sans', sans-serif;
-  margin: 0 0 10px;
-  font-size: clamp(17px, 1.9vw, 24px);
-  line-height: 1.15;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.pa__panel-desc {
-  margin: 0;
-  font-size: clamp(12px, 0.95vw, 13.5px);
-  line-height: 1.5;
-  color: var(--color-gray); /* párrafo → gris secundario de la paleta */
-}
-
-/* --- Flechas --------------------------------------------------------------- */
-.pa__arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  /* Tiene que estar SIEMPRE por encima de cualquier card del stack.
-     El z-index de las cards varía dinámicamente (hasta TOTAL, calculado
-     en script.js), así que usamos un valor bien alto y fijo acá para
-     que las flechas nunca queden tapadas. */
-  z-index: 20;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(229, 229, 229, 0.28);
-  background: #00000040;
-  backdrop-filter: blur(6px);
-  color: #ffffff;
+/* Botón cuadrado con borde blanco + ícono, esquina sup. derecha (antes
+   tenía una flecha diagonal en <svg>, reemplazada a pedido explícito por
+   "icons8-núcleo-48.png") */
+.pa__card-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: background 0.3s var(--ease-premium), border-color 0.3s var(--ease-premium), opacity 0.3s var(--ease-premium);
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: var(--bone);
+  box-sizing: border-box;
 }
 
-.pa__arrow:hover {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+/* Mismo tamaño/proporción visual que tenía el <svg> de la flecha (14px
+   dentro del cuadrado de 32px) — pedido explícito "mismo padding y
+   proporción visual que tenía la flecha". Rotación continua, lenta y
+   sutil (pedido explícito "una vuelta completa cada 15-20s, lineal e
+   infinita, sin distraer"): 18s, sentido único. */
+.pa__card-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  animation: pa-icon-spin 18s linear infinite;
 }
 
-.pa__arrow-label {
-  font-family: 'DM Mono', 'Instrument Sans', sans-serif;
-  font-size: 18px;
+@keyframes pa-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   VIDEO — elemento protagonista de la card
+   -------------------------------------------------------------------------- */
+.pa__card-media {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+.pa__video {
+  position: absolute;
+  left: 0;
+  /* Un poco más alto que el contenedor: le da margen al parallax vertical
+     (JS anima yPercent en scroll) sin que se lleguen a ver bordes vacíos. */
+  top: -10%;
+  width: 100%;
+  height: 120%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Overlay negro PLANO (no degradado) solo para mejorar la lectura */
+.pa__card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.pa__card-foot {
+  position: relative;
+  z-index: 3;
+  flex-shrink: 0;
+}
+
+.pa__card-title {
+  font-family: 'Geist Mono', 'DM Mono', monospace;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1;
+  font-size: clamp(15px, 1.3vw, 18px);
+  line-height: 1.25;
+  color: var(--bone);
+  margin: 0 0 8px;
 }
 
-.pa__arrow--prev { left: clamp(10px, 2vw, 24px); }
-.pa__arrow--next { right: clamp(10px, 2vw, 24px); }
-
-/* Las flechas ya no tienen estado deshabilitado: siempre están visibles
-   y activas. La navegación es circular (ver goToIndex en script.js), así
-   que siempre hay una capacidad "siguiente" o "anterior" a la que ir. */
+.pa__card-desc {
+  font-family: 'Instrument Sans', sans-serif;
+  font-weight: 400;
+  font-size: clamp(12.5px, 1vw, 14px);
+  line-height: 1.55;
+  color: var(--color-gray);
+  margin: 0;
+}
 
 /* ==========================================================================
    RESPONSIVE
    ========================================================================== */
 
-/* Tablets */
-@media (max-width: 900px) {
-  .pa__panel {
-    max-width: 60%;
+/* Tablets: 2 columnas */
+@media (max-width: 1024px) {
+  .pa__grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Mobile */
+/* Mobile: 1 columna, misma proporción 4:5 */
 @media (max-width: 620px) {
-  .pa__topbar {
-    justify-content: flex-end;
+  .pa {
+    padding: clamp(64px, 13vh, 100px) 0;
   }
 
-  .pa__progress {
-    width: 110px;
-  }
-
-  .pa__panel {
-    max-width: 86%;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    padding: 18px 20px;
-  }
-
-  .pa__arrow {
-    width: 38px;
-    height: 38px;
-  }
-
-  .pa__panel-desc {
-    display: -webkit-box;
-   line-clamp: 3;          /* estándar */
-    -webkit-line-clamp: 3;  /* Chrome, Edge, Safari */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  .pa__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
-
 
 /* ============ FIN SECCIÓN "CAPACIDADES" ============ */
 
 
-.test-section {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  min-height: 560px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 100px 24px;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.test-section--1 {
-  background: radial-gradient(120% 120% at 75% 15%, #101822 0%, var(--black) 60%);
-}
-
-.test-section--2 {
-  background: var(--black);
-}
-
-/* --------------------------------------------------------------------
-   Sección 03 — diseño real (marco de esquinas técnicas + texto)
-   Scopeado con el prefijo "cap2-" para no chocar con nada del resto
-   del sitio. ".cap2-content" es ahora un hijo de flujo normal: hereda
-   el centrado horizontal/vertical que ya provee ".test-section"
-   (compartida con la Sección 04, que no se toca), así que no necesita
-   position:absolute — solo sirve de ancla (position:relative) para las
-   cuatro esquinas.
-   -------------------------------------------------------------------- */
-.cap2-content {
-  position: relative;
-  max-width: 780px;
-  padding: clamp(36px, 6vw, 56px) clamp(32px, 6vw, 64px);
-}
-
-/* Esquinas técnicas (Tech/HUD Corners): solo el remate de cada vértice,
-   nunca un borde completo — dos lados de 1px que se cruzan en la
-   esquina, con un leve redondeo en la unión. Blanco (texto principal):
-   no son un estado activo/interactivo, así que no les corresponde el
-   azul de énfasis. */
-.cap2-corner {
+/* ============================================================================
+   FILM GRAIN — ".spotlight-grain", compartida por "#idi-timeline" y
+   "#trayectoria" (renombrado — antes también la usaba "#test-3", ver
+   "SECCIÓN CLARIDAD" más abajo)
+   ----------------------------------------------------------------------------
+   Ruido monocromático muy sutil (SVG feTurbulence en un data-URI, sin
+   peticiones externas) con una deriva extremadamente lenta, arriba del
+   canvas WebGL y debajo del texto.
+   ============================================================================ */
+.spotlight-grain {
   position: absolute;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--bone);
+  inset: -20%;
+  width: 140%;
+  height: 140%;
+  z-index: 2;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  animation: spotlight-grain-drift 46s ease-in-out infinite alternate;
+}
+
+@keyframes spotlight-grain-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-2%, -1.5%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-grain {
+    animation: none;
+  }
+}
+
+/* Canvas WebGL del Spotlight — hoy en uso solo por "#idi-timeline" (ver
+   attachSpotlightCanvas() en script.js): antes también lo usaba
+   "#test-3" con la escena procedural completa (fondo animado + revelado
+   de texto por palabras), reemplazada por "SECCIÓN CLARIDAD" más abajo. */
+.reunimos-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
   pointer-events: none;
 }
 
-.cap2-corner--tl {
-  top: 0;
-  left: 0;
-  border-right: none;
-  border-bottom: none;
-  border-top-left-radius: 4px;
+/* ============================================================================
+   SECCIÓN "CLARIDAD" (id="clarity") — pedido explícito: réplica del hero
+   editorial de ylem.watch, reemplaza lo que antes era "#test-3" (fondo
+   WebGL + Spotlight + revelado de texto por palabras, con pin propio).
+   ----------------------------------------------------------------------------
+   Bloque estático — sin pin, sin scroll-jacking, sin canvas ni decoración:
+   fondo blanco puro, eyebrow + titular alineados a la izquierda, ubicados
+   en el tercio superior de una sección de ~90vh (mucho más aire abajo que
+   arriba — "justify-content" no centra, el padding-top hace ese trabajo).
+   Tipografía como única protagonista, nada de imágenes ni elementos
+   decorativos — a diferencia del resto del sitio (fondo negro), esta
+   sección es deliberadamente blanca, mismo criterio de "pausa visual"
+   que ya usa Trayectoria con su celeste.
+   ============================================================================ */
+/* FIX (bug real: el fundido hacia Productos empezaba a mitad de la
+   lectura del título, cortando "ACTUALIDAD"): ".clarity" medía 90vh
+   (offsetHeight ≈810px en un viewport de 900px) mientras que el pin de
+   "addPinFadeTransition()" (ver script.js) asume que el panel saliente
+   ocupa EXACTAMENTE una pantalla — su "end" es "+=window.innerHeight" y
+   dispara en "bottom bottom". Con la sección 90px más corta que el
+   viewport, quedaba un hueco de 90px ARRIBA de ella al pinearse (su
+   "bottom" llega al "bottom" del viewport antes de lo esperado), así
+   que Productos (el panel entrante, que sube por detrás sin
+   pinSpacing) alcanzaba a cubrir la parte de ABAJO del título mucho
+   antes de que el fundido llegara a una opacidad perceptible. "height"
+   fijo (no "min-height": no puede crecer más de una pantalla, ni
+   achicarse) deja la geometría exacta que el cálculo del pin espera. */
+.clarity {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  padding: clamp(96px, 16vh, 160px) 40px 64px;
+  box-sizing: border-box;
 }
 
-.cap2-corner--tr {
-  top: 0;
-  right: 0;
-  border-left: none;
-  border-bottom: none;
-  border-top-right-radius: 4px;
+.clarity-content {
+  max-width: 100%;
 }
 
-.cap2-corner--bl {
-  bottom: 0;
-  left: 0;
-  border-right: none;
-  border-top: none;
-  border-bottom-left-radius: 4px;
+.clarity-eyebrow {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  margin: 0 0 24px;
 }
 
-.cap2-corner--br {
-  bottom: 0;
-  right: 0;
-  border-left: none;
-  border-top: none;
-  border-bottom-right-radius: 4px;
-}
-
-.cap2-title {
-  /* Pedido explícito: este texto sí pasa a DM Mono (a diferencia del
-     resto de la Sección 03, que se mantiene sin cambios). */
-  font-family: 'DM Mono', monospace;
-  font-weight: 700;
-  font-size: clamp(1.4rem, 2.5vw, 2.1rem);
-  line-height: 1.4;
-  color: var(--bone);
-  text-align: left;
+.clarity-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  text-transform: uppercase;
+  /* "min(4.6vw, 7.2vh)" en vez de solo "4.6vw" (pedido explícito: si el
+     título no entra en 100vh, que se achique el font-size en vez de
+     dejar crecer la sección) — en una pantalla ANCHA pero BAJA
+     (viewport corto, ej. notebook en una ventana chica), el término
+     "vh" termina siendo el más chico de los dos y gana, achicando el
+     título lo necesario para que ".clarity" (ahora "height:100vh" fijo,
+     ver arriba) nunca lo recorte. En una pantalla normal/alta manda
+     "4.6vw" como siempre, sin cambios de comportamiento. */
+  font-size: clamp(28px, min(4.6vw, 7.2vh), 60px);
+  line-height: 1.14;
+  letter-spacing: -0.005em;
+  color: #0d0d0d;
   margin: 0;
+  /* "ch" (relativo a la propia tipografía/tamaño) en vez de un ancho
+     fijo: mantiene una distribución de líneas parecida en cualquier
+     tamaño de pantalla, similar a la referencia (~5 líneas), dejando
+     que el navegador decida el corte natural (sin saltos manuales). */
+  max-width: 34ch;
 }
 
-/* Palabras clave resaltadas dentro del párrafo (color de énfasis) */
-.cap2-highlight {
-  color: var(--color-primary);
+@media (max-width: 640px) {
+  .clarity {
+    padding: 88px 20px 48px;
+  }
+
+  .clarity-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+
+  .clarity-title {
+    font-size: clamp(26px, 7.4vw, 32px);
+    max-width: none;
+  }
 }
 
 /* ============================================================
@@ -1022,26 +1448,43 @@ a {
 ============================================= */
 
 #s4-intro {
-    background: #05070b;
+    background: var(--black);
     padding: 140px 0;
     box-sizing: border-box;
-    /* Sección 03 se "va" con el mismo truco pin+scale+fade que el resto
-       del sitio (ver script.js): necesita un viewport completo de scroll
-       natural, PROVISTO por lo que venga después, para terminar de
-       desvanecerse. Cuando un filtro deja una sola fila visible,
-       Productos se queda mucho más corto que eso — el navegador
-       entonces clampea el scroll a la nueva altura máxima (más corta),
-       que cae DENTRO del rango de desvanecimiento de Sección 03, y su
-       resto (ya invisible para clicks, pero no para la vista) vuelve a
-       asomar detrás de los tabs. Este mínimo garantiza que Productos
-       siempre tenga esa pantalla completa de margen, sin importar
-       cuántas filas queden visibles por el filtro activo. */
+    /* Piso de layout: cuando un filtro deja una sola fila visible, sin
+       este mínimo Productos quedaría mucho más corto que una pantalla
+       (se vería la sección siguiente asomando de más). Confirmado en
+       vivo que este "min-height" solo (offsetHeight nunca baja de
+       "window.innerHeight" al filtrar) NO alcanza para el bug real
+       reportado con captura — ese bug no era de altura CSS, sino del
+       ScrollTrigger de la transición pin+scale+fade hacia I+D+i (ver
+       "addPinFadeTransition()"/"refreshS4PinFade()" en script.js): con
+       el usuario ya scrolleado adentro de esa transición, filtrar
+       cambia la altura real de la sección y su "start"/"end" en
+       píxeles, así que la MISMA posición de scroll cae de golpe en un
+       % distinto del recorrido — el fix real vive en JS, repone el
+       scroll para preservar ese %, esto de acá solo evita el caso
+       DEGENERADO (sección más corta que la pantalla en primer lugar). */
     min-height: 100vh;
 }
 
 .prod-container {
     width: min(1200px, 92vw);
     margin: 0 auto;
+}
+
+/* Identificador "[ Productos ]": mismo estilo que ".idi-caption__eyebrow"
+   (I+D+i) — DM Mono, mismo peso/tamaño/tracking/color — para que los
+   indicadores de sección se sientan consistentes en todo el sitio. */
+.prod__eyebrow {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--bone);
+    margin-bottom: clamp(20px, 3vh, 32px);
 }
 
 /* Tabs de filtro */
@@ -1134,7 +1577,7 @@ a {
 }
 
 .prod-row-title {
-    font-family: 'DM Mono', 'Instrument Sans', sans-serif;
+    font-family: var(--font-body);
     /* Único cambio pedido para esta sección: tamaño ligeramente menor
        (antes clamp(18px, 1.8vw, 24px)). Espaciado/estructura intactos. */
     font-size: clamp(16px, 1.55vw, 21px);
@@ -1343,65 +1786,247 @@ a {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.prod-presentation-chevron {
-  transition: transform 0.35s var(--ease-premium, ease);
+.prod-presentation-plus {
+  transition: transform 0.25s var(--ease-premium, ease);
 }
 
-.prod-presentation.is-open .prod-presentation-chevron {
-  transform: rotate(180deg);
+.prod-presentation-toggle:hover .prod-presentation-plus {
+  transform: rotate(90deg);
 }
 
 /* El cuerpo (donde vive el iframe) arranca colapsado y se abre con la
-   misma transición premium que el resto del sitio. "overflow:hidden"
-   además recorta el ancho extra del iframe de abajo, que es lo que
-   permite esconder la barra de scroll del visor de PDF. */
+   misma transición premium que el resto del sitio.
+   FIX (pedido explícito: "visor de PDF más chico, con espacio negro
+   alrededor, efecto marco/letterbox"): antes crecía con el contenido
+   ("max-height:1000px" de margen, el iframe ocupaba casi todo el
+   ancho/alto disponible) — ahora es una caja de tamaño FIJO (altura
+   constante, siempre la misma sea cual sea el PDF/producto — clave
+   para el punto 2: predecibilidad del salto de alto de "#s4-intro" al
+   abrir el acordeón, ver "s4AccordionExtraScroll" en script.js), con
+   fondo negro y el iframe centrado adentro, un poco más chico que el
+   contenedor (deja el margen negro visible tipo "marco de cine" — ver
+   ".prod-presentation-body iframe" más abajo). "overflow:hidden" recorta
+   ese marco; el scroll del documento lo maneja el visor de PDF nativo
+   DENTRO del iframe (contexto de navegación aparte — nunca hace
+   scrollear la página real). */
 .prod-presentation-body {
-  max-height: 0;
+  height: 0;
+  /* FIX (pedido explícito: "quedó muy chico y tiene que estar
+     centrado") — dos problemas: 1) faltaba "margin:0 auto", así que
+     este box (block-level, "max-width" propio) quedaba pegado contra el
+     borde IZQUIERDO de ".prod-presentation-inner" (que ocupa el ancho
+     completo de ".prod-container", hasta 1200px) en vez de centrado
+     dentro del marco negro; 2) 560px contra un contenedor de hasta
+     1200px se leía chico — subido a 720px. */
+  max-width: 720px;
+  margin: 0 auto;
   overflow: hidden;
+  /* FIX (bug reportado: al scrollear el PDF embebido, el scroll
+     "saltaba" bruscamente y terminaba reacomodando mal el resto de la
+     página): el PDF vive en un iframe con su propio scroll interno; al
+     llegar al final de ese scroll interno (o si el cursor queda un
+     instante sobre el marco negro en vez del PDF mismo), el navegador
+     le pasa el scroll restante a la página completa ("scroll
+     chaining") — y como la página tiene transiciones ligadas 1:1 al
+     scroll (los pin+fade de GSAP), ese traspaso repentino se veía como
+     un salto. "overscroll-behavior: contain" evita que ese traspaso se
+     filtre hacia afuera de este contenedor.
+  */
+  overscroll-behavior: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
   border-top: 0px solid rgba(255, 255, 255, 0.08);
-  transition: max-height 0.6s var(--ease-premium, ease),
+  transition: height 0.6s var(--ease-premium, ease),
               border-top-width 0.4s ease;
 }
 
 .prod-presentation.is-open .prod-presentation-body {
-  max-height: 1000px; /* margen por arriba de la altura real del iframe */
+  height: 480px; /* fija, no crece con el contenido del PDF (pedido explícito) */
   border-top-width: 1px;
 }
 
+/* Un poco más chico que el contenedor (pedido explícito "efecto marco/
+   letterbox"): el padding negro alrededor lo da la diferencia entre
+   este tamaño y el de ".prod-presentation-body" de arriba, centrado por
+   el "flex" del padre. */
 .prod-presentation-body iframe {
   display: block;
-  width: calc(100% + 18px);
-  margin-right: -18px;
-  height: clamp(420px, 60vh, 620px);
+  width: calc(100% - 40px);
+  height: calc(100% - 40px);
+  border: none;
+  border-radius: 4px;
+  overscroll-behavior: contain;
+}
+
+/* Mobile (pedido explícito: "el contenedor puede necesitar un tamaño
+   distinto, más angosto — mismo criterio de altura fija + scroll
+   interno, solo ajustando el max-width/height"). */
+@media (max-width: 880px) {
+  .prod-presentation-body {
+    max-width: 100%;
+  }
+
+  .prod-presentation.is-open .prod-presentation-body {
+    height: 400px;
+  }
+
+  .prod-presentation-body iframe {
+    width: calc(100% - 24px);
+    height: calc(100% - 24px);
+  }
+}
+
+/* ============================================================================
+   MODAL "Explorar solución" — visor de PDF en overlay
+   ----------------------------------------------------------------------------
+   FIX (pedido explícito: sacar el PDF del acordeón in-page — su scroll
+   interno chocaba con las transiciones de scroll de la página — y
+   abrirlo en un modal en vez de en la misma página, ver "openPdfModal()"
+   en script.js). Vive en un overlay aparte, con el scroll de la página
+   bloqueado mientras está abierto: no hay scroll de página con el que
+   el del PDF pueda chocar. Reglas nuevas, no modifica nada de
+   ".prod-presentation*" (que sigue mostrando el botón "Explorar
+   solución" exactamente igual que antes).
+   ============================================================================ */
+
+.pdf-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.pdf-modal.is-open {
+  display: flex;
+}
+
+.pdf-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 11, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.pdf-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(900px, 100%);
+  height: min(85vh, 1100px);
+  background: #000;
+  border-radius: var(--radius-lg, 8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.pdf-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.pdf-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pdf-modal-body {
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-modal-body iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
   border: none;
 }
 
+.pdf-modal-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Contenedor scrolleable propio (PDF.js dibuja cada página en su
+   propio <canvas> acá adentro, ver "renderPdfIntoModal()" en
+   script.js) — al ser NUESTRO (no un visor nativo dentro de un
+   <iframe>), sí podemos estilar su scrollbar. */
+.pdf-modal-pages {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #2c2c2c #000;
+}
+
+.pdf-modal-pages canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto 14px auto;
+}
+
+.pdf-modal-pages canvas:last-child {
+  margin-bottom: 0;
+}
+
+/* Scrollbar negra (Chrome/Edge/Safari) */
+.pdf-modal-pages::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pdf-modal-pages::-webkit-scrollbar-track {
+  background: #000;
+}
+
+.pdf-modal-pages::-webkit-scrollbar-thumb {
+  background: #2c2c2c;
+  border-radius: 6px;
+}
+
+.pdf-modal-pages::-webkit-scrollbar-thumb:hover {
+  background: #3d3d3d;
+}
+
 @media (max-width: 880px) {
-  .prod-presentation-body iframe {
-    height: clamp(340px, 55vh, 460px);
+  .pdf-modal {
+    padding: 16px;
+  }
+  .pdf-modal-panel {
+    height: 90vh;
   }
 }
 
 /* ============ FIN SECCIÓN "PRODUCTOS" ============ */
 
 /* ============ FIN SECCIONES DE PRUEBA (CSS) ============ */
-
-/* Sección 03 — responsive (marco y texto más chicos) */
-@media (max-width: 640px) {
-  .cap2-content {
-    padding: 28px 24px;
-  }
-
-  .cap2-corner {
-    width: 20px;
-    height: 20px;
-  }
-
-  .cap2-title {
-    font-size: 1.15rem;
-    line-height: 1.5;
-  }
-}
 
 /* ============ RESPONSIVE ============ */
 
@@ -1418,44 +2043,31 @@ a {
 
 @media (max-width: 900px) {
   .hero__texts {
-    padding: 0 24px 32px;
-    gap: 20px;
-  }
-
-  .hero__text {
-    max-width: 300px;
-    font-size: 14px;
+    padding: 0 24px;
   }
 }
 
 @media (max-width: 640px) {
   .hero__title-wrap {
     padding: 0 20px;
+    bottom: clamp(48px, 8vh, 64px);
   }
 
+  /* Mismo criterio que ".idi-caption__eyebrow" en mobile (achicar un
+     toque tamaño/tracking, mismo peso/color/mayúsculas) — antes acá
+     había un "font-size" de título grande (clamp 2–3rem) que ya no
+     aplica con el estilo de etiqueta editorial. */
   .hero__title {
-    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    font-size: 10px;
+    letter-spacing: 0.28em;
   }
 
   .hero__texts {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-    padding: 0 24px 28px;
-  }
-
-  .hero__text {
-    max-width: 100%;
-    text-align: center;
-  }
-
-  .hero__text--left {
-    color: var(--bone);
+    padding: 0 16px;
   }
 
   .hero__socials {
-    justify-content: center;
+    gap: 14px;
   }
 
   .island {
@@ -1466,93 +2078,122 @@ a {
 /* ============================================================================
    SECCIÓN "I+D+I" — Proceso de Innovación
    ----------------------------------------------------------------------------
-   Dos <section> consecutivas e independientes (antes eran dos bloques
-   dentro de la misma sección — separadas así el timeline puede ocupar
-   toda la pantalla en su propio pin, sin compartir espacio con el
-   título):
-
-   1) ".idi-hero" (~60vh): eyebrow + título, con scroll normal (sin
-      pin). El título reutiliza directamente ".cap2-content"/
-      ".cap2-title"/".cap2-highlight" (Sección 03, "Reunimos
-      experiencia..."): mismo ancho máximo, alineación, interlineado,
-      responsive y el mismo efecto de aparición por scramble (ver
-      script.js) — cero CSS nuevo para el título en sí, solo hereda.
-
-   2) ".idi-timeline": el timeline solo, centrado y a pantalla completa.
-      Es la que pinea (ver script.js).
+   Una sola <section> (".idi-timeline"), a pantalla completa, que pinea
+   por completo (ver script.js). Antes existía una sección previa
+   independiente (".idi-hero": eyebrow + título, con su propio pin) —
+   se eliminó a pedido explícito; ese contenido ahora vive como un
+   caption estático (".idi-caption", ver más abajo) dentro de esta misma
+   sección, sin pin ni animación propia.
    ============================================================================ */
 
-.idi-hero {
+/* --- Timeline: sección propia, a pantalla completa --- (rediseño
+   pedido explícito: réplica del "Il Metodo" de myweblab.it — fondo
+   blanco puro en vez del negro que usaba antes, mismo criterio de
+   "pausa visual sobre blanco" que ya usa ".clarity" en este archivo,
+   MISMA paleta oscura-sobre-blanco que esa sección (#0d0d0d/#1a1a1a),
+   para quedar consistente entre las dos. La curva/nodos/fases pasan de
+   layout en fila (flex) a posicionamiento absoluto: la curva queda
+   centrada horizontalmente y cada fase se ubica alternando lado
+   izquierda/derecha "pegada" a su nodo — ver JS en script.js (mismo
+   ScrollTrigger de siempre, ahora con ~100vh de scroll por fase en vez
+   de un paso fijo más corto, y las fases/nodos animan por clases CSS
+   + transition en vez de tweens de GSAP, pedido explícito). */
+.idi-timeline {
   position: relative;
   width: 100%;
-  min-height: 60vh;
-  background: var(--black);
+  min-height: 100vh;
+  background: #ffffff;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 100px 24px;
+  padding: 24px;
   box-sizing: border-box;
+  /* Capas propias de Spotlight (".reunimos-canvas" + ".spotlight-grain",
+     ver index.html — pedido explícito, sin tocar nada del
+     layout/animaciones propias del Timeline): "overflow" recorta
+     el bleed de ".spotlight-grain" (igual que en Trayectoria, que
+     también la usa) e "isolation" contiene su "mix-blend-mode" adentro
+     de esta sección. Ninguna de las dos propiedades afecta el pin/curva/
+     nodos existentes — solo el recorte visual de las capas nuevas.
+     El shader del spotlight ya pinta en azul semitransparente sobre
+     alfa (ver "attachSpotlightCanvas()"), así que sigue funcionando
+     igual de bien sobre blanco, sin tocarlo. El grano blanco de
+     ".spotlight-grain" (mix-blend-mode:overlay) sí queda casi
+     imperceptible sobre blanco — es una clase COMPARTIDA con
+     Trayectoria, no se toca acá para no afectarla ahí; en la práctica
+     coincide con la referencia (sin grano visible). */
+  overflow: hidden;
+  isolation: isolate;
 }
 
-/* Identificador "I+D+i": mismo estilo de siempre, alineado a la
-   izquierda del título (ambos dentro del mismo ".cap2-content"). */
-.idi__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+/* Caption editorial "[ I+D+i ]" — arriba a la izquierda (pedido
+   explícito, antes abajo a la derecha). "top" con el mismo criterio de
+   despeje del nav fijo que ya usa ".hero-3d__hint" (clamp de ~90-120px)
+   para no quedar pegada contra la barra "SOPHIA ... MENU". Color: mismos
+   tonos oscuros que ".clarity-eyebrow"/".clarity-title" (la otra
+   sección blanca del sitio), consistente entre las dos. */
+.idi-caption {
+  position: absolute;
+  left: clamp(24px, 5vw, 64px);
+  top: clamp(90px, 12vh, 120px);
+  z-index: 3;
+  max-width: min(280px, 60vw);
+  text-align: left;
+  pointer-events: none;
+}
+
+.idi-caption__eyebrow {
+  display: block;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.32em;
   text-transform: uppercase;
   text-align: left;
-  color: var(--bone);
-  margin-bottom: clamp(20px, 3vh, 32px);
+  color: #1a1a1a;
+  margin: 0 0 8px;
 }
 
-/* Cuadrado azul CSS-only antes del texto (sin íconos ni imágenes) */
-.idi__eyebrow::before {
-  content: "";
-  display: inline-block;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  background: var(--color-primary);
+/* Tipografía/tamaño igualados a ".clarity-eyebrow" (pedido explícito,
+   "Definidos por la experiencia..." en la sección que va después de
+   Capacidades) — mismo "font-family"/"font-size", el resto (peso,
+   color, interlineado) se deja como estaba, es un párrafo normal, no un
+   eyebrow en mayúsculas. */
+.idi-caption__text {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(13, 13, 13, 0.55);
+  margin: 0;
 }
 
-/* --- Timeline: sección propia, a pantalla completa --- */
-.idi-timeline {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  background: var(--black);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(60px, 9vh, 110px) 24px;
-  box-sizing: border-box;
-}
-
-/* Mismo padding horizontal que el resto del sitio; centrado en el
-   viewport tanto horizontal como verticalmente. */
+/* Caja central: ancho/alto fijos (clamp), centrada por el flex de
+   ".idi-timeline" — adentro, la curva y las fases se ubican todas
+   "position:absolute" respecto de ESTA caja (ver más abajo), así que su
+   tamaño es lo único que define cuánto "aire" tienen para desplegarse a
+   los costados. */
 .idi__process {
   position: relative;
-  width: min(1200px, 100%);
+  z-index: 3;
+  width: min(1100px, 94vw);
+  height: min(70vh, 620px);
   margin: 0 auto;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: clamp(20px, 3vw, 40px);
-  min-height: clamp(460px, 60vh, 640px);
 }
 
-/* Timeline vertical curvo */
+/* Curva: columna centrada horizontalmente en ".idi__process". El "d" del
+   path (ver index.html) ya oscila entre x=30 y x=170 de un viewBox
+   200×900 — con este contenedor más ancho que antes (antes
+   "clamp(70px,8vw,110px)", pensado para una columna angosta en fila) esa
+   oscilación se nota como un vaivén real izquierda/derecha (pedido
+   explícito "la curva va curvada, no es recta"), sin tocar el "d". */
 .idi__timeline {
-  position: relative;
-  width: clamp(70px, 8vw, 110px);
-  flex-shrink: 0;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: clamp(170px, 20vw, 260px);
 }
 
 .idi__path-svg {
@@ -1563,136 +2204,243 @@ a {
   overflow: visible;
 }
 
+/* Trazo de fondo: siempre visible completo y sutil (pedido explícito) —
+   gris muy tenue sobre blanco, equivalente al "rgba(255,255,255,.15)"
+   que usaba sobre negro. */
 .idi__path-track {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.15); /* línea base sutil, sobre el fondo negro del sitio */
+  stroke: rgba(13, 13, 13, 0.12);
   stroke-width: 2;
 }
 
+/* Trazo azul: se "dibuja" con el scroll vía stroke-dasharray/dashoffset
+   (ver script.js) — accá solo el color/grosor, el dashoffset lo anima JS
+   en cada frame del scrub. */
 .idi__path-progress {
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
 }
 
-/* Indicador del recorrido: X minimalista (no círculo). Se anima 100% desde
-   JS con xPercent/yPercent/rotation de GSAP (por eso NO lleva transform acá:
-   dejarlo en manos de GSAP evita que la propiedad "transform" en CSS entre
-   en conflicto con la que GSAP escribe inline al rotar). */
+/* La referencia (myweblab.it) no tiene ningún indicador viajando sobre
+   la curva, solo la línea creciendo + los nodos — se deja de animar
+   desde JS y se oculta acá (el <div> queda en el HTML sin tocar la
+   estructura, pedido explícito, simplemente no se muestra). */
 .idi__indicator {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  color: var(--bone);
-  z-index: 2;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.55));
+  display: none;
 }
 
-.idi__indicator::before,
-.idi__indicator::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 2px;
-  background: currentColor;
-  border-radius: 1px;
-}
-
-.idi__indicator::before { transform: translate(-50%, -50%) rotate(45deg); }
-.idi__indicator::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
-/* Nodos fijos de cada etapa: misma X minimalista, tamaño más chico y SIN
-   animación de rotación (quietos en su punto del path) — solo cambian de
-   color (JS) para reflejar qué etapas ya se recorrieron. */
+/* Nodos: ahora cada uno contiene el efecto "CSS Reaction" (anillos 3D
+   girando estilo átomo, pedido explícito, reemplaza al círculo que se
+   "pintaba" solo) — ".idi__node" pasa a ser solo el contenedor
+   posicionado sobre la curva (mismo "left/top" calculado en JS, sin
+   cambios ahí); el color/relleno ya no vive acá, vive en ".circles" de
+   adentro. */
 .idi__node {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-  color: #7E7F83; /* gris neutro, mismo tono que usa el estado "pendiente" desde JS */
   z-index: 3;
+  pointer-events: none;
 }
 
-.idi__node::before,
-.idi__node::after {
-  content: "";
+/* Adaptado de "recursos/glb/core-css/css-reaction-update-responsive/
+   dist/style.css" (pedido explícito "importar/adaptar los estilos y
+   keyframes, no reescribirlos") — SOLO CSS, no es un modelo 3D a pesar
+   de vivir junto a los .glb en esa carpeta (no tiene GLTFLoader ni
+   Three.js de por medio). Cambios respecto del original: 1) tamaño fijo
+   en px chico en vez de "50vmin" (pensado para pantalla completa); 2)
+   "color" ya no es el cyan fijo del ejemplo — arranca gris (fase no
+   alcanzada) y pasa a "--color-primary" (mismo azul del acento de
+   "HOY") cuando ".idi__node" recibe ".is-active" (ver JS,
+   "updateNodes()" en script.js — se reutiliza esa misma clase/lógica de
+   scroll-progress que ya existía, no se agregó un listener nuevo).
+   Nombre de clase con prefijo de contexto (".idi__node .circles", no
+   ".circles" a secas) para no chocar con ningún otro uso del mismo
+   efecto en el resto del sitio. */
+.idi__node .circles {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  perspective: 50000px;
+  color: rgba(13, 13, 13, 0.32);
+  transition: color 0.4s ease;
+}
+.idi__node .circles span {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100%;
-  height: 2px;
+  transform: translate(-50%, -50%);
+  display: block;
+  width: 18.4%;
+  height: 18.4%;
+  border-radius: 100%;
   background: currentColor;
-  border-radius: 1px;
 }
-
-.idi__node::before { transform: translate(-50%, -50%) rotate(45deg); }
-.idi__node::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
-.idi__node-num {
+.idi__node .circles div {
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 8px;
-  white-space: nowrap;
-  font-family: 'DM Mono', monospace;
-  font-weight: 600;
-  font-size: 10px;
-  color: inherit; /* sigue al color del nodo (JS anima el mismo ".idi__node") */
+  width: 100%;
+  height: 100%;
+  border-left: 2px solid;
+  border-top: 2px solid transparent;
+  border-radius: 100%;
+  /* Gira siempre, esté o no activada la fase (pedido explícito "nunca
+     estático") — el único cambio al activarse es el "color" de arriba,
+     vía "currentColor". */
+  animation: idi-node-anim-1 1s linear infinite;
+}
+.idi__node .circles div:nth-child(2) {
+  animation-name: idi-node-anim-2;
+}
+.idi__node .circles div:nth-child(3) {
+  animation-name: idi-node-anim-3;
 }
 
-/* Etapas: apiladas una sobre otra así el crossfade entre ellas no mueve
-   el layout ni deja huecos. */
+.idi__node.is-active .circles {
+  color: var(--color-primary);
+}
+
+@keyframes idi-node-anim-1 {
+  from {
+    transform: rotateZ(120deg) rotateX(66deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateZ(120deg) rotateX(66deg) rotateZ(360deg);
+  }
+}
+@keyframes idi-node-anim-2 {
+  from {
+    transform: rotateZ(240deg) rotateX(66deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateZ(240deg) rotateX(66deg) rotateZ(360deg);
+  }
+}
+@keyframes idi-node-anim-3 {
+  from {
+    transform: rotateZ(360deg) rotateX(66deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateZ(360deg) rotateX(66deg) rotateZ(360deg);
+  }
+}
+
+/* Performance (pedido explícito: "4 marcadores x 3 animaciones = 12
+   animaciones simultáneas, si genera jank pausar fuera del viewport") —
+   ".idi-timeline--paused" la alterna un único IntersectionObserver sobre
+   toda la sección en script.js (los 4 marcadores viven juntos dentro del
+   mismo tramo pineado, entran/salen de pantalla todos a la vez, no hace
+   falta observar de a uno). No toca ".is-active": la fase alcanzada
+   sigue el mismo color al des-pausarse. */
+.idi-timeline--paused .idi__node .circles div {
+  animation-play-state: paused;
+}
+
+/* La referencia no muestra número junto a los nodos chicos de la curva
+   (el número grande vive junto al título, ver ".idi__stage-num" más
+   abajo) — mismo criterio que ".idi__indicator": se deja en el HTML
+   (pedido explícito, no tocar estructura) pero no se muestra. */
+.idi__node-num {
+  display: none;
+}
+
 .idi__stages {
-  position: relative;
-  flex: 1;
-  min-height: clamp(200px, 26vh, 320px);
-  display: flex;
-  align-items: center;
-}
-
-.idi__stage {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
+}
+
+/* Cada fase ocupa el mismo alto centrado verticalmente ("top:50%" +
+   "translateY(-50%)", combinado con un segundo translateY propio para
+   la animación de entrada/salida — pedido explícito "fade-in con
+   translateY leve desde abajo, fade-out hacia arriba"): por defecto
+   (ninguna clase) queda LISTA debajo, a la espera de su turno
+   ("is-future" implícito); ".is-past" la dejar arriba, ya "leída"; y
+   ".is-current" la centra del todo, visible. Las tres comparten la
+   misma transition, así que not importa en qué sentido se scrollee
+   (adelante o atrás) siempre anima entre el par de estados correcto. */
+.idi__stage {
+  position: absolute;
+  top: 50%;
+  width: clamp(260px, 30vw, 380px);
+  transform: translateY(calc(-50% + 28px));
+  pointer-events: none;
+  transition: transform 0.6s ease;
+}
+
+.idi__stage.is-past {
+  transform: translateY(calc(-50% - 28px));
+}
+
+.idi__stage.is-current {
+  transform: translateY(-50%);
+}
+
+/* Alternancia izquierda/derecha (pedido explícito, "como en las
+   capturas"): fases pares quedan a la DERECHA de la curva (curva ahí
+   bulge hacia la izquierda), impares a la IZQUIERDA (curva bulge hacia
+   la derecha) — mismo patrón que la referencia. */
+.idi__stage[data-index="0"],
+.idi__stage[data-index="2"] {
+  left: 50%;
+  margin-left: clamp(90px, 9vw, 140px);
   text-align: left;
 }
 
-.idi__stage-num {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'DM Mono', monospace;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55); /* texto secundario sobre fondo negro */
+.idi__stage[data-index="1"],
+.idi__stage[data-index="3"] {
+  right: 50%;
+  margin-right: clamp(90px, 9vw, 140px);
+  text-align: right;
 }
 
-/* Mismo cuadrado CSS-only que ".idi__eyebrow", antes del texto */
-.idi__stage-num::before {
-  content: "";
-  display: inline-block;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  background: var(--color-primary);
+/* Número de fase: protagonista y en azul (pedido explícito "mantené el
+   azul para... los números de fase, como ya está en el código") — el
+   texto sigue siendo "FASE 01" (no se tocó el HTML), así que el tamaño
+   queda generoso pero no gigante para que la palabra completa entre
+   cómoda en una línea. Cada hijo (num/título/desc) anima su propio
+   fade-in con un pequeño delay entre sí (pedido explícito "el título un
+   poco después que el número") — todos ocultos por defecto, visibles
+   solo con ".idi__stage.is-current" en el padre. */
+.idi__stage-num,
+.idi__stage-title,
+.idi__stage-desc {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.idi__stage.is-current .idi__stage-num {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.idi__stage.is-current .idi__stage-title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.08s;
+}
+
+.idi__stage.is-current .idi__stage-desc {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.16s;
+}
+
+.idi__stage-num {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+  letter-spacing: 0.01em;
+  color: var(--color-primary);
+  margin: 0 0 6px;
 }
 
 .idi__stage-title {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-body);
   font-weight: 600;
-  font-size: clamp(1.3rem, 2.6vw, 1.85rem);
-  color: var(--bone);
-  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  color: #0d0d0d;
+  margin: 0 0 12px;
 }
 
 .idi__stage-desc {
@@ -1700,50 +2448,1116 @@ a {
   font-weight: 400;
   font-size: clamp(0.92rem, 1.2vw, 1rem);
   line-height: 1.65;
-  color: rgba(255, 255, 255, 0.65); /* texto secundario sobre fondo negro */
-  max-width: 46ch;
+  color: rgba(13, 13, 13, 0.55);
+  max-width: 38ch;
   margin: 0;
 }
 
-/* Tablet: ".idi-timeline" es la que pinea — su contenido tiene que
-   seguir entrando en un viewport (100vh), por eso se achica el
-   ".idi__process" acá. ".idi-hero" no pinea (scroll normal), así que no
-   tiene ese límite: su propio responsive ya lo resuelve heredado de
-   ".cap2-content"/".cap2-title". El timeline conserva su misma
-   composición en fila (curva + texto) en todos los tamaños. */
+.idi__stage[data-index="1"] .idi__stage-desc,
+.idi__stage[data-index="3"] .idi__stage-desc {
+  margin-left: auto;
+}
+
 @media (max-width: 900px) {
   .idi__process {
-    min-height: clamp(420px, 68vh, 560px);
+    height: min(64vh, 560px);
+  }
+
+  .idi-caption {
+    max-width: min(220px, 55vw);
   }
 }
 
+/* Mobile (pedido explícito "podés simplificar a una curva más
+   vertical/recta si es necesario"): se abandona la alternancia
+   izquierda/derecha — la curva pasa a vivir pegada al borde izquierdo
+   (angosta, así el vaivén del "d" se ve casi vertical) y las 4 fases
+   quedan todas a su derecha, mismo lado siempre, para que el texto
+   nunca se corte contra el borde de la pantalla. */
 @media (max-width: 640px) {
   .idi-timeline {
-    padding: clamp(40px, 8vh, 70px) 20px;
+    padding: 20px;
   }
 
   .idi__process {
-    min-height: clamp(380px, 64vh, 480px);
+    width: 100%;
+    height: min(58vh, 480px);
   }
 
   .idi__timeline {
-    width: 64px;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: none;
+    width: 56px;
   }
 
-  .idi__node {
-    width: 12px;
-    height: 12px;
+  .idi__node .circles {
+    width: 20px;
+    height: 20px;
   }
 
-  .idi__node-num {
-    font-size: 9px;
+  .idi__stage,
+  .idi__stage[data-index="0"],
+  .idi__stage[data-index="1"],
+  .idi__stage[data-index="2"],
+  .idi__stage[data-index="3"] {
+    left: 76px;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+    width: calc(100% - 76px);
+    text-align: left;
   }
 
-  .idi__stages {
-    min-height: clamp(220px, 42vh, 320px);
+  .idi__stage[data-index="1"] .idi__stage-desc,
+  .idi__stage[data-index="3"] .idi__stage-desc {
+    margin-left: 0;
+  }
+
+  .idi__stage-num {
+    font-size: 1.15rem;
+  }
+
+  .idi__stage-title {
+    font-size: 1.5rem;
   }
 
   .idi__stage-desc {
     font-size: 0.88rem;
+    max-width: 32ch;
   }
+
+  .idi-caption {
+    max-width: min(160px, 48vw);
+  }
+
+  .idi-caption__eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+  }
+
+  .idi-caption__text {
+    font-size: 12px;
+  }
+}
+
+/* ============================================================
+   SECCION TRAYECTORIA — "Sticky Text + Stacked Scrolling Cards"
+   (pedido explícito, reemplaza al slider de flechas anterior)
+   ----------------------------------------------------------------
+   Columna izquierda: mazo de 4 cards (".tr__cards") apiladas unas
+   sobre otras (position:absolute, misma caja) que se animan con
+   GSAP/ScrollTrigger — ver "SECCION TRAYECTORIA" al final de
+   script.js. Columna derecha: texto editorial (".tr__intro") que
+   queda fijo porque es toda la SECCIÓN la que se pinea (pin:true) —
+   no necesita su propio "position:sticky", alcanza con vivir dentro
+   del elemento pineado. Reusa ".spotlight-grain" (mismo grano
+   animado del resto del sitio) y las variables de :root — sin
+   colores/tipografías nuevas, excepto el fondo de card (#212127,
+   pedido explícito, un gris carbón intermedio entre el negro de la
+   sección y el gris de los textos).
+
+   FIX (feedback: "cards muy chicas/grandes, mal alineadas"): la altura
+   de ".tr__cards" pasó de "clamp(vw)" (dependía solo del ancho de
+   VIEWPORT, no del ancho real de la columna → quedaba desproporcionada
+   según cuánto ocupara el texto de al lado) a "aspect-ratio: 1/1"
+   (proporción ligada al ancho real de la COLUMNA) con un tope en "vh"
+   para pantallas bajas. Columnas del grid ajustadas a 1.05fr/1fr para
+   dar un poco más de aire a las cards.
+
+   FIX (feedback: "el scroll tiene que empezar cuando [TRAYECTORIA]
+   quede al nivel del nav"): esto era la sección pineada quedando
+   VERTICALMENTE CENTRADA ("align-items:center") dentro de sus 100vh —
+   con el nav flotante fijo arriba, el resultado se veía "más abajo"
+   que el resto de las secciones (que no se pinean y arrancan con
+   padding-top normal, sin centrarse en el viewport). Cambia a
+   "align-items:flex-start" con un padding-top más ajustado (variables
+   --tr-pad-top/--tr-eyebrow-space de acá abajo) para que el eyebrow
+   quede a la altura del nav, igual que en el resto del sitio. Como
+   ahora es padding fijo y no centrado, estas mismas variables se
+   reusan en el cálculo de ".tr__cards" (ver más abajo) para que la
+   card nunca empuje contenido fuera del viewport pineado (donde no
+   hay scroll de página disponible para "recuperar" el excedente).
+   ============================================================ */
+.tr {
+  --tr-pad-top: clamp(56px, 7vw, 96px);
+  --tr-pad-bottom: clamp(40px, 5vw, 72px);
+  --tr-eyebrow-space: clamp(24px, 3.5vw, 40px);
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  /* Pedido explícito: fondo celeste de Sophia (mismo azul de énfasis
+     del resto del sitio, --blue-light) en vez del negro del resto de
+     las secciones. */
+  background: var(--blue-light);
+  padding: var(--tr-pad-top) 24px var(--tr-pad-bottom);
+  box-sizing: border-box;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-start;
+}
+
+.tr__inner {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, 100%);
+  margin: 0 auto;
+}
+
+.tr__eyebrow {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-gray);
+  margin: 0 0 var(--tr-eyebrow-space);
+}
+
+/* "align-items:stretch" (antes "start"): ambas columnas siguen
+   arrancando en el mismo borde superior (el flujo normal de
+   ".tr__intro" ya las alinea ahí solo), pero ahora la columna derecha
+   se ESTIRA a la misma altura que la de las cards — necesario para
+   poder anclar "Conocé Cadipel" contra ese borde inferior (pedido
+   explícito: "alineado al margen inferior de las cards"), ver
+   ".tr__intro"/".tr__link" más abajo. */
+.tr__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(48px, 6vw, 110px);
+  align-items: stretch;
+}
+
+/* --- Columna izquierda: mazo de cards --- */
+/* "Ventana" fija y CUADRADA (pedido explícito: "cuadradas no
+   rectangulares", "ocupan un 70% del alto") — el ancho se deriva del
+   alto vía aspect-ratio 1/1, nunca al revés, así queda cuadrada sin
+   importar cuánto mida la columna. "min(70vh, 100%)" para no
+   desbordar en columnas angostas. overflow:hidden recorta contra
+   este borde la card que sube y desaparece por arriba (pedido
+   explícito: "va desapareciendo en el margen superior").
+   Todo lo que se mueve es ".tr__cards-track" (ver script.js): las 4
+   cards NO se superponen ni tienen transparencia — están en flujo
+   normal, apiladas en columna con gap fijo, y el track entero se
+   traslada hacia arriba como un solo bloque ("pasan en fila para
+   arriba", pedido explícito). */
+.tr__cards {
+  position: relative;
+  /* +20% de ancho (pedido explícito, antes "min(70vh, 100%)") — el
+     tercer término del min() es una red de seguridad: nunca deja que
+     la card (cuadrada, ancho=alto) sea más alta que el espacio
+     vertical que REALMENTE queda libre dentro del pin (100vh menos
+     paddings y eyebrow, mismas variables que ".tr" de arriba) — sin
+     esto, en pantallas bajas "84vh" empujaría contenido fuera del
+     viewport pineado, donde no hay scroll de página para compensarlo. */
+  width: min(84vh, 100%, calc(100vh - var(--tr-pad-top) - var(--tr-pad-bottom) - var(--tr-eyebrow-space) - 24px));
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.tr__cards-track {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tr__card {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #212127;
+  /* Mismo borde sutil que ".pa__card" en Capacidades (pedido explícito
+     "que siga el estilo de las cards de capacidades") — el fondo
+     #212127 en sí queda igual (pedido explícito anterior, aparte). */
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  /* Cuadradas, sin bordes redondeados (pedido explícito). */
+  border-radius: 0;
+  padding: clamp(24px, 3vw, 36px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Misma textura de puntos extremadamente sutil que ".pa__card::before"
+   en Capacidades — un solo radial-gradient repetido, sin degradado de
+   color, mismo tamaño/opacity. */
+.tr__card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 1px);
+  background-size: 14px 14px;
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tr__card-top,
+.tr__card-text {
+  position: relative;
+  z-index: 1;
+}
+
+.tr__card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tr__card-title {
+  /* Mismo tratamiento que ".pa__card-tag" en Capacidades (pedido
+     explícito "como las cards de capacidades"): monoespaciada, chica,
+     mayúsculas vía text-transform (el texto en el HTML se escribe
+     normal, "[ Quiénes somos ]"), letter-spacing amplio. */
+  font-family: 'Geist Mono', 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-gray);
+  margin: 0;
+  max-width: 24ch;
+}
+
+/* "Pequeño cuadrado de acento" (pedido explícito) en la esquina
+   superior derecha de la card — mismo azul de énfasis que el resto
+   del sitio. */
+.tr__card-accent {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--blue-light);
+  margin-top: 6px;
+}
+
+.tr__card-text {
+  /* Mismo tamaño que ".tr__card-title" (pedido explícito). */
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--color-gray);
+  text-transform: uppercase;
+  margin: 0;
+  max-width: 42ch;
+}
+
+/* Modelo 3D "SM_PCB_Modern_06_Low.glb" (pedido explícito, "entre el
+   bloque de texto Quiénes somos y el texto que va debajo") — ver
+   "tr-pcb.js". Solo existe dentro de la card índice 0: es HIJO directo
+   de ".tr__card" (un flex-column con "justify-content:space-between"),
+   así que insertarlo ACÁ, entre ".tr__card-top" y ".tr__card-text" en
+   el HTML, no mueve ni el título (sigue pegado arriba) ni el párrafo
+   (sigue pegado abajo) — "space-between" siempre ancla el primer y
+   último hijo contra los bordes del contenedor, sea cual sea la
+   cantidad de hijos en el medio (pedido explícito "sin desplazar el
+   contenido existente"). "clamp(...)" en vez de "300px" fijo: pedido
+   explícito "se achica proporcionalmente en pantallas chicas" — la
+   card es cuadrada y su tamaño real varía con el viewport (ver
+   ".tr__cards" más arriba), así que un bloque de 300px fijo podría no
+   entrar en una card chica; el clamp lo limita a un 55% del ancho
+   disponible de la card como techo antes de llegar a los 300px. */
+.tr__pcb {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: clamp(120px, 55%, 300px);
+  aspect-ratio: 1 / 1;
+  margin: clamp(8px, 1.5vw, 16px) 0;
+}
+
+.tr__pcb-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  /* Pedido explícito: drag con mouse / swipe con touch rota la cámara
+     (OrbitControls) — "touch-action:none" LIMITADO a este canvas (no a
+     ".tr__pcb"/".tr__card") para que el gesto no dispare también el
+     scroll nativo de la página en mobile, sin tocar el resto de la
+     card. */
+  cursor: grab;
+  touch-action: none;
+}
+
+.tr__pcb-canvas.is-ready {
+  opacity: 1;
+}
+
+.tr__pcb-canvas:active {
+  cursor: grabbing;
+}
+
+/* Spinner simple mientras carga el .glb (pedido explícito, "19.6MB
+   puede tardar en conexiones lentas") — un solo anillo animado, sin
+   texto/porcentaje (pedido "simple"). "tr-pcb.js" togglea
+   "is-hidden" apenas el primer frame ya está pintado. */
+.tr__pcb-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tr__pcb-loader.is-hidden {
+  opacity: 0;
+}
+
+.tr__pcb-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--blue-light);
+  animation: tr-pcb-spin 0.85s linear infinite;
+}
+
+@keyframes tr-pcb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modelo 3D "black_honey_robotic_arm" (pedido explícito, "entre el
+   texto superior de la card y el texto de abajo, igual que se hizo en
+   la primera card con el PCB") — ver "tr-arm.js". Mismas reglas que
+   ".tr__pcb*" de arriba, en paralelo (no se reutilizan las mismas
+   clases a propósito: son dos instancias 3D independientes, cada una
+   en su propia card, mismo criterio que ".pa__card-arrow"/
+   ".tr__link-arrow" en el resto del archivo — visualmente iguales,
+   lógicamente aparte). */
+.tr__arm {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  /* Agrandado respecto de las otras cards (pedido explícito) — antes
+     "clamp(120px, 55%, 300px)", igual que las demás. Medido a mano el
+     espacio libre real disponible arriba/abajo en la card (con
+     ".tr__card-top"/".tr__card-text" fijos contra los bordes vía
+     "justify-content:space-between" del padre, ver ".tr__card") antes
+     de que el nuevo tamaño empiece a apretar el texto de abajo. */
+  width: clamp(140px, 65%, 360px);
+  aspect-ratio: 1 / 1;
+  margin: clamp(8px, 1.5vw, 16px) 0;
+}
+
+.tr__arm-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  /* Pedido explícito: drag/swipe rotan la cámara (OrbitControls) —
+     "touch-action:none" limitado a este canvas nada más. */
+  cursor: grab;
+  touch-action: none;
+}
+
+.tr__arm-canvas.is-ready {
+  opacity: 1;
+}
+
+.tr__arm-canvas:active {
+  cursor: grabbing;
+}
+
+.tr__arm-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tr__arm-loader.is-hidden {
+  opacity: 0;
+}
+
+.tr__arm-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--blue-light);
+  animation: tr-pcb-spin 0.85s linear infinite;
+}
+
+/* Efecto "Planet Interior Energy Flow" (pedido explícito, "entre el
+   texto superior de la card y el texto de abajo, mismo criterio que
+   las cards 1 y 2") — ver "tr-planet.js". Mismas reglas que
+   ".tr__pcb*"/".tr__arm*" de arriba, en paralelo (mismo criterio: tres
+   instancias 3D independientes, una por card). */
+.tr__planet {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: clamp(120px, 55%, 300px);
+  aspect-ratio: 1 / 1;
+  margin: clamp(8px, 1.5vw, 16px) 0;
+}
+
+.tr__planet-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  cursor: grab;
+  touch-action: none;
+}
+
+.tr__planet-canvas.is-ready {
+  opacity: 1;
+}
+
+.tr__planet-canvas:active {
+  cursor: grabbing;
+}
+
+.tr__planet-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tr__planet-loader.is-hidden {
+  opacity: 0;
+}
+
+.tr__planet-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--blue-light);
+  animation: tr-pcb-spin 0.85s linear infinite;
+}
+
+/* Modelo 3D "sci_fi_hud_quillvr" (pedido explícito, "entre el texto
+   superior de la card y el texto de abajo, mismo criterio que las
+   cards anteriores") — ver "tr-hud.js". Mismas reglas que
+   ".tr__pcb*"/".tr__arm*"/".tr__planet*" de arriba, en paralelo. */
+.tr__hud {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: clamp(120px, 55%, 300px);
+  aspect-ratio: 1 / 1;
+  margin: clamp(8px, 1.5vw, 16px) 0;
+}
+
+.tr__hud-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  cursor: grab;
+  touch-action: none;
+}
+
+.tr__hud-canvas.is-ready {
+  opacity: 1;
+}
+
+.tr__hud-canvas:active {
+  cursor: grabbing;
+}
+
+.tr__hud-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tr__hud-loader.is-hidden {
+  opacity: 0;
+}
+
+.tr__hud-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--blue-light);
+  animation: tr-pcb-spin 0.85s linear infinite;
+}
+
+/* --- Columna derecha: texto fijo --- */
+.tr__intro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* Sin título propio (se sacó "CADIPEL" de acá, pedido explícito): la
+     descripción pasa a ser el primer elemento.
+
+     FIX (feedback: "tiene que estar SIEMPRE alineado a la card visible
+     arriba", no solo al arrancar el scroll pineado): antes
+     "padding-top" igualaba el padding interno real de ".tr__card" para
+     coincidir con el título de la card 0 ("[ Quiénes somos ]") — pero
+     eso solo es válido en el instante inicial (progress 0). Apenas se
+     scrollea adentro del pin, es el TRACK el que se mueve (ver
+     "updateTrack()" en script.js) mientras esta columna se queda fija:
+     la "ventana" de cards (".tr__cards", sin padding propio) va
+     recortando cualquier punto intermedio de cualquier card, así que
+     alinear contra el padding interno de una card específica deja de
+     tener sentido ni bien avanza el scroll. Lo único que NUNCA se
+     mueve — antes, durante y después del scroll pineado — es el borde
+     superior de esa ventana: "padding-top: 0" hace que el texto
+     arranque exactamente ahí, así que queda a la misma altura pase lo
+     que pase adentro de la ventana. El link se empuja al fondo con
+     "margin-top:auto" en ".tr__link" — así queda a la misma altura que
+     el borde inferior de las cards, sin importar cuánto ocupe el texto
+     de arriba. */
+  padding-top: 0;
+  height: 100%;
+}
+
+.tr__desc {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--color-gray);
+  /* Pedido explícito: ~15% menos de ancho (antes 46ch). */
+  max-width: 39ch;
+  margin: 0 0 clamp(24px, 3vw, 36px);
+}
+
+/* Botón cohesivo (mismo criterio ya resuelto en ".contact__submit":
+   "Enviar" tiene que estar DENTRO del botón, al lado de la flecha, no
+   como texto suelto + cuadrado aparte — acá pasaba lo mismo: el borde
+   solo envolvía a ".tr__link-arrow", el texto quedaba afuera sin
+   ningún contenedor. El borde se corrió del ícono al link entero;
+   "inline-flex" sin ancho fijo asegura que nunca sobresalga nada,
+   sea cual sea el largo del texto). Fondo NEGRO + flecha celeste al
+   hover (pedido explícito) — distinto del resto del sitio (que pasa a
+   fondo celeste completo, ver ".contact__submit:hover") porque acá el
+   botón vive sobre el celeste de la sección: un fill celeste se
+   perdería contra ese fondo, negro da contraste real. */
+.tr__link {
+  /* Ancla el link contra el borde inferior de ".tr__intro" (que ahora
+     mide lo mismo que la columna de cards) — pedido explícito
+     "alineado al margen inferior de las cards de manera horizontal".
+     "align-self:flex-start" (bug latente, invisible hasta ahora: sin
+     querer, al ser hijo directo de un flex-column ".tr__intro" con
+     "align-items:stretch" implícito, el link se estiraba a todo el
+     ANCHO de la columna — no se notaba porque antes el único borde
+     visible era el del ícono, 32x32, no el del link entero. Ahora que
+     el borde envuelve texto+ícono como un solo botón, ese estiramiento
+     se veía como un rectángulo enorme con un hueco vacío a la derecha
+     — "flex-start" lo vuelve a su ancho real, el del contenido). */
+  align-self: flex-start;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 12px 14px 12px 22px;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  text-decoration: none;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.tr__link-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: var(--bone);
+  box-sizing: border-box;
+  transition: color 0.3s ease;
+}
+
+.tr__link-arrow svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.tr__link:hover {
+  background: #000000;
+  border-color: #000000;
+}
+
+.tr__link:hover .tr__link-arrow {
+  color: var(--blue-light);
+}
+
+/* --- Responsive --- */
+/* Reset del mazo de cards a flujo normal — comparte los dos casos en
+   los que el JS NUNCA crea el ScrollTrigger (ver "isMobile"/
+   "prefersReducedMotion" en script.js): mobile (pedido explícito, "sin
+   pin") Y "prefers-reduced-motion" en CUALQUIER ancho. El track
+   (".tr__cards-track") ya es un flex-column con gap por defecto — acá
+   solo hace falta que la "ventana" (".tr__cards") deje de recortar y
+   fijar tamaño cuadrado, y anular el transform que haya dejado GSAP
+   (red de seguridad para el caso borde de resize sin recargar, de
+   desktop con el pin ya corrido a uno de estos dos casos). */
+@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .tr__cards {
+    width: 100%;
+    aspect-ratio: auto;
+    overflow: visible;
+  }
+
+  .tr__cards-track {
+    gap: 16px;
+    transform: none !important;
+  }
+
+  .tr__card {
+    aspect-ratio: auto;
+  }
+}
+
+/* Pedido explícito: "en mobile, simplificar a cards apiladas en scroll
+   vertical normal, sin pin" — acá solo el reflow a una columna (el
+   reset de las cards en sí ya lo cubre el media query combinado de
+   arriba). */
+@media (max-width: 900px) {
+  .tr {
+    min-height: 0;
+    display: block;
+  }
+
+  .tr__grid {
+    grid-template-columns: 1fr;
+    gap: clamp(32px, 6vw, 48px);
+  }
+
+  /* Texto antes que las cards en mobile (pedido explícito de orden en
+     desktop es cards-izq/texto-der; en una sola columna el contexto
+     editorial primero se lee mejor) — solo cambia el orden visual, no
+     el DOM. */
+  .tr__intro {
+    order: -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .tr {
+    padding: clamp(56px, 12vw, 80px) 16px;
+  }
+}
+
+/* ============================================================
+   CONTACTO (pedido explícito, layout calcado de
+   https://www.dragonfly.xyz/contact — ver comentario en index.html
+   junto a "#contacto" con el detalle de qué se calcó y qué se
+   adaptó). Fondo negro + variables de :root del resto del sitio
+   (a diferencia del FOOTER de acá abajo, que sí es blanco por pedido
+   explícito aparte) — grid de dos columnas, misma proporción/gap que
+   ".tr__grid" para que se sienta de la misma familia visual.
+   ============================================================ */
+.contact {
+  position: relative;
+  width: 100%;
+  background: var(--black);
+  padding: clamp(80px, 11vw, 140px) 24px;
+  box-sizing: border-box;
+}
+
+.contact__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(48px, 6vw, 110px);
+  align-items: start;
+  width: min(1200px, 100%);
+  margin: 0 auto;
+}
+
+.contact__intro {
+  position: relative;
+}
+
+.contact__eyebrow {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-gray);
+  margin: 0 0 clamp(20px, 3vw, 32px);
+}
+
+.contact__title {
+  font-family: var(--font-body);
+  /* Pedido explícito: misma tipografía/grosor/mayúsculas que
+     ".clarity-title" (sección Claridad) — antes peso 700, sin
+     mayúsculas. */
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: clamp(2.4rem, 4.4vw, 3.8rem);
+  line-height: 1.1;
+  color: var(--bone);
+  margin: 0 0 clamp(20px, 3vw, 28px);
+}
+
+/* --- Formulario --- */
+.contact__form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.4vw, 28px);
+}
+
+.contact__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(20px, 2.4vw, 28px);
+}
+
+.contact__field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact__field label {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gray);
+}
+
+/* Inputs "underline" (sin caja, solo borde inferior) — mismo criterio
+   minimalista/cuadrado que el resto del sitio (sin border-radius en
+   ningún lado), foco en azul de énfasis (--blue-light), igual que
+   cualquier otro estado activo del sitio. */
+.contact__field input,
+.contact__field select,
+.contact__field textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  padding: 10px 2px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--bone);
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.contact__field textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.contact__field input::placeholder,
+.contact__field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.contact__field input:focus,
+.contact__field select:focus,
+.contact__field textarea:focus {
+  outline: none;
+  border-color: var(--blue-light);
+}
+
+/* Select nativo, mismo tratamiento visual que los inputs — flecha
+   propia en vez del ícono default del navegador, para que no rompa
+   con el resto (sin depender de "appearance" inconsistente entre
+   navegadores más que para ocultar la flecha nativa). */
+.contact__field select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E5E5E5' stroke-width='1.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  background-size: 16px;
+  padding-right: 24px;
+}
+
+.contact__field select option {
+  background: var(--black);
+  color: var(--bone);
+}
+
+/* Estado de error nativo (":invalid" solo después de un intento de
+   submit — ver ".contact__field--touched" que agrega initContactForm()
+   en script.js, así no se marca en rojo un campo vacío ANTES de que
+   el usuario intente enviar). */
+.contact__field--touched input:invalid,
+.contact__field--touched select:invalid,
+.contact__field--touched textarea:invalid {
+  border-color: #e0554f;
+}
+
+.contact__submit-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: clamp(4px, 1vw, 12px);
+}
+
+/* Mismo componente que ".tr__link"/".pa__card-arrow": texto +
+   flecha cuadrada 32x32, borde blanco translúcido que pasa a azul de
+   énfasis al hover — pedido explícito de mantener la línea visual del
+   sitio en vez del botón sólido de la referencia. */
+/* Un solo botón cohesivo — pedido explícito ("Enviar" tiene que estar
+   DENTRO del botón, al lado de la flecha, no como texto suelto +
+   cuadrado aparte). Mismo lenguaje visual que el resto del sitio
+   (borde translúcido, azul de énfasis al hover) pero ahora aplicado a
+   TODO el botón como una sola pieza, no solo al ícono. */
+.contact__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 12px 14px 12px 22px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.contact__submit-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: var(--bone);
+  box-sizing: border-box;
+}
+
+.contact__submit-arrow svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.contact__submit:hover {
+  background: var(--blue-light);
+  border-color: var(--blue-light);
+}
+
+/* Pedido explícito: la flechita (usa "stroke=currentColor", ver
+   ".contact__submit-arrow svg" en index.html) tiene que verse negra
+   contra el fondo celeste del hover, en vez del blanco de siempre —
+   solo la flecha, el texto "Enviar" se deja como está. */
+.contact__submit:hover .contact__submit-arrow {
+  color: var(--black);
+}
+
+.contact__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.contact__status {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-gray);
+  margin: 0;
+}
+
+.contact__status--success {
+  color: var(--blue-light);
+}
+
+.contact__status--error {
+  color: #e0554f;
+}
+
+@media (max-width: 900px) {
+  .contact__inner {
+    grid-template-columns: 1fr;
+    gap: clamp(40px, 8vw, 56px);
+  }
+}
+
+@media (max-width: 620px) {
+  .contact {
+    padding: clamp(56px, 12vw, 80px) 16px;
+  }
+
+  .contact__row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* ============================================================
+   FOOTER — rediseño (pedido explícito, réplica del footer de
+   razorpay.com/sprint/26): solo dos elementos, mucho más simple que la
+   versión anterior (que calcaba addverb.ai — pills de navegación,
+   íconos sociales en placas circulares, divisor, link "volver arriba").
+   Fondo blanco, igual que antes. Orden (pedido explícito): wordmark
+   arriba, copyright+redes abajo de todo.
+
+   1) ".site-footer__wordmark": nombre de marca gigante tipo watermark,
+      en el celeste de acento del sitio (var(--blue-light), el mismo de
+      ".logo-accent" en el nav y el fondo de "#trayectoria"). Desliza
+      solo hacia la izquierda en loop infinito (pedido explícito): DOS
+      copias idénticas del texto en fila (".site-footer__wordmark-item",
+      ver el HTML) dentro de un TRACK que anima "translateX(-50%)" sin
+      parar — como la segunda copia es igual a la primera, el punto
+      donde el loop "reinicia" cae exactamente sobre sí mismo, así que
+      no se nota el corte. "font-size" fluido (clamp) para que la altura
+      del texto se adapte a cualquier pantalla sin tocar nada más.
+   2) ".site-footer__bar": copyright + íconos sociales, mismo renglón,
+      al final. Texto chico/bajo contraste (mismo criterio que el resto
+      del sitio para texto secundario). Íconos: mismos PNG que
+      ".hero__socials" (blancos, pensados para el Hero oscuro) — acá van
+      con "filter:invert()" para quedar oscuros/sutiles sobre este fondo
+      blanco, sin necesitar assets nuevos.
+   ============================================================ */
+.site-footer {
+  position: relative;
+  background: var(--white);
+  padding-top: clamp(32px, 5vw, 56px);
+  overflow: hidden;
+}
+
+.site-footer__wordmark {
+  width: 100%;
+  overflow: hidden;
+}
+
+.site-footer__wordmark-track {
+  display: inline-flex;
+  align-items: baseline;
+  width: max-content;
+  animation: footer-wordmark-scroll 24s linear infinite;
+}
+
+.site-footer__wordmark-item {
+  display: inline-block;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--blue-light);
+  line-height: 0.85;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  /* "13vw" hace que el ancho de CADA copia siga de cerca al ancho del
+     viewport en cualquier tamaño de pantalla — el piso/techo en rem son
+     solo salvaguardas para pantallas extremadamente chicas o gigantes. */
+  font-size: clamp(2.2rem, 13vw, 11rem);
+  padding-right: clamp(1.5rem, 5vw, 4rem);
+}
+
+@keyframes footer-wordmark-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Se mueve exactamente el ancho de UNA copia (mitad del track
+       entero, que tiene dos) — nunca "la mitad de la pantalla". */
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer__wordmark-track {
+    animation: none;
+  }
+}
+
+.site-footer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 40px) clamp(24px, 6vw, 64px) clamp(28px, 4vw, 44px);
+}
+
+.site-footer__copy {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(13, 13, 13, 0.5);
+  margin: 0;
+}
+
+.site-footer__socials {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Links de texto (pedido explícito, en vez de los íconos que tenía
+   antes — "como links"), mismo tamaño/tipografía que el copyright de al
+   lado para que lean como una sola línea consistente. */
+.site-footer__social {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(13, 13, 13, 0.5);
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+
+.site-footer__social:hover,
+.site-footer__social:focus-visible {
+  color: var(--color-primary);
+}
+
+.site-footer__social:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

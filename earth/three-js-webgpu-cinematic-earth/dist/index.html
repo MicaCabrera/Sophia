@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script type="importmap">
+{
+  "imports": {
+    "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.21.0/dist/lil-gui.esm.js",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+    "three/": "https://esm.sh/three@^0.185.1/",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js"
+  }
+}
+</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three.js Earth WebGPU Engine</title>
+  <link rel="stylesheet" href="./style.css">
+
+  
+  </head>
+  <body>
+  <div id="app">
+    <!-- 3D WebGPU Earth Canvas -->
+    <canvas id="earth-canvas"></canvas>
+
+    <!-- City Beacons & HUD Overlay -->
+    <div id="hud-container"></div>
+
+    <!-- Sci-Fi System Boot Loader -->
+    <div id="loader">
+      <div class="loader-bg-glow"></div>
+      <div class="loader-grid"></div>
+      <div class="loader-content">
+        <div class="spinner-outer"></div>
+        <div class="spinner-inner"></div>
+        <div class="loader-counter">
+          <span class="loader-percent">
+            <span id="loader-progress-val">0</span>
+            <span class="loader-percent-symbol">%</span>
+          </span>
+        </div>
+        <div class="loader-title">System Boot</div>
+        <div id="loader-message-val" class="loader-message">Initializing WebGPU Renderer</div>
+        <div class="loader-bar-bg">
+          <div id="loader-progress-bar" class="loader-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
