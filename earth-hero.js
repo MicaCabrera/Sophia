@@ -18,7 +18,6 @@ import { film } from "three/examples/jsm/tsl/display/FilmNode.js";
 import GUI from "lil-gui";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
-
 var isMobileOrTablet = () => {
   if (typeof window === "undefined") return false;
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -47,19 +46,15 @@ var getInitialResolutionScale = () => {
     return 0.5;
   }
 };
-// Adaptado para Sophia (pedido explícito: "fondo animado del hero, ocupando
-// toda la pantalla"): 2K en vez de 8K — 6 mapas en 8K (~tierra completa +
-// nubes + starmap + luna) pesan decenas de MB, inaceptable como peso de
-// fondo decorativo que carga en cada visita al Home. 2K mantiene el mismo
-// efecto visual a la distancia de cámara con la que se ve el planeta acá.
+
 var use2k = true;
 var CONSTANTS = {
   RENDER_TYPE: "webgpu",
-  // 'webgpu' or 'webgl'
+
   EARTH_RADIUS: 10,
   ATMOSPHERE_RADIUS: 10.2,
   SEGMENTS: use2k ? 64 : 256,
-  // Less segments for lower-end devices
+
   TEXTURES: {
     ALBEDO: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_daymap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_daymap.jpg",
     NIGHT: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_nightmap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_nightmap.jpg",
@@ -71,10 +66,7 @@ var CONSTANTS = {
     MOON_DISPLACEMENT: use2k ? "https://www.dsp-studio.ro/globe/ldem_4.png" : "https://www.dsp-studio.ro/globe/ldem_4.png"
   },
   GUI: {
-    // Adaptado: panel de debug (lil-gui) OCULTO por defecto en el sitio en
-    // vivo — antes al revés (visible salvo "?settings=false"). Se puede
-    // seguir abriendo a mano agregando "?settings=true" a la URL para
-    // inspeccionar/ajustar parámetros sin tener que tocar este archivo.
+
     SHOW: typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("settings") === "true" : false,
     BLOOM: {
       ENABLED: true,
@@ -190,37 +182,12 @@ var CONSTANTS = {
       WARM_COLOR: "#ffd9b0"
     },
     CITIES: {
-      // Adaptado: beacons de ciudades ENCENDIDOS por defecto (pedido
-      // explícito) — antes apagados salvo que se prendieran a mano desde
-      // el panel de GUI, que en el sitio en vivo queda oculto.
+
       ENABLED: true
     }
   }
 };
-// Adaptado (pedido explícito): reemplaza las 16 ciudades "cinemáticas"
-// originales del pen por las sedes reales de Sophia (pedido explícito de
-// otra sesión: se sacó "New York, USA" de esta lista — quedan Sofía y
-// Buenos Aires). Mismo formato de objeto que usaba el pen (id/name/lat/
-// lng) — no se le sacó nada más, solo se le agregó "timezone" (IANA, ver
-// "updateTimes()" más abajo: ahora usa "Intl.DateTimeFormat" con
-// "timeZone" en vez del switch/case de offsets UTC fijos que traía el pen
-// — ese approach no manejaba horario de verano; con IANA + Intl se
-// resuelve solo, sin lógica manual).
-// Posicionamiento sobre el globo: "initLocations()" (más abajo en este
-// archivo) convierte lat/lng a la posición 3D con la fórmula esférica
-// estándar (phi/theta) y agrega cada anchor como HIJO de "earthGroup" —
-// el mismo grupo que la esfera texturizada, sin ningún rotation offset
-// propio en ningún lado del archivo (confirmado a mano, no hay ningún
-// "earthGroup.rotation.y = ..." escondido) — por eso no hace falta
-// ningún ajuste extra: la fórmula ya alineada correctamente con la
-// textura para las 16 ciudades originales (Tokio/Shanghai/NY, etc. —
-// comprobado visualmente antes de este cambio, cada una cae exactamente
-// sobre su ubicación real) sigue siendo válida tal cual para estas
-// coordenadas. Todo lo que consume esta lista (beacons/labels del HUD,
-// relojes, anchors 3D — ver "initLocations()"/"handleLocationsUpdate()"/
-// el bloque que arma "hudContainer" más abajo) recorre el array
-// genéricamente, así que sacar una entrada acá alcanza: no queda ningún
-// beacon/label/timer huérfano para "new_york" en ningún lado.
+
 var CINEMATIC_LOCATIONS = [
   {
     id: "sofia",
@@ -237,7 +204,6 @@ var CINEMATIC_LOCATIONS = [
     timezone: "America/Argentina/Buenos_Aires"
   }
 ];
-
 
 import * as THREE from "three";
 import { texture, normalMap, mix, normalize, cross, cameraPosition, positionWorld, pow, dot, max, vec3, vec2, smoothstep, uniform, equirectUV, positionLocal, modelWorldMatrixInverse, vec4, length, acos, sub, float, min, bumpMap } from "three/tsl";
@@ -443,7 +409,6 @@ async function createEarth(loader, sunDirUniform, moonPosUniform, maxAnisotropy 
   return group;
 }
 
-
 import * as THREE2 from "three";
 function updateMoon(moonMesh, sunMesh, camera, settings) {
   const ma = settings.angle;
@@ -473,7 +438,7 @@ async function createMoon(textureLoader, maxAnisotropy = 1) {
     map,
     displacementMap,
     displacementScale: CONSTANTS.GUI.MOON.DISPLACEMENT_SCALE,
-    // Adjust based on visual strength
+
     emissive: new THREE2.Color(16777215),
     emissiveMap: map,
     emissiveIntensity: CONSTANTS.GUI.MOON.ILLUMINATION,
@@ -511,47 +476,47 @@ var lensflareWgsl = wgslFn(
 fn lensflare(uv: vec2<f32>, pos: vec2<f32>, iTime: f32) -> vec3<f32> {
 	var main: vec2<f32> = uv - pos;
 	var uvd: vec2<f32> = uv * length(uv);
-	
+
 	var ang: f32 = atan2(main.y, main.x);
 	var dist: f32 = length(main);
     dist = pow(dist, 0.1);
 
     var t: vec2<f32> = vec2<f32>((ang - iTime / 9.0) * 16.0, dist * 32.0);
 	var n: f32 = noise2D(t + vec2<f32>(iTime, iTime));
-	
+
 	var f0: f32 = 1.0 / (length(uv - pos) * 16.0 + 1.0);
-	
+
     var n2: f32 = noise1D(abs(ang) + n / 2.0);
 	f0 = f0 + f0 * (sin((ang + iTime / 18.0 + n2 * 2.0) * 12.0) * 0.1 + dist * 0.1 + 0.8);
 
 	var f2: f32  = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.8  * pos), 2.0)), 0.0) * 0.25;
 	var f22: f32 = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.85 * pos), 2.0)), 0.0) * 0.23;
 	var f23: f32 = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.9  * pos), 2.0)), 0.0) * 0.21;
-	
+
 	var uvx: vec2<f32> = mix(uv, uvd, vec2<f32>(-0.5, -0.5));
-	
+
 	var f4: f32  = max(0.01 - pow(length(uvx + 0.4  * pos), 2.4), 0.0) * 6.0;
 	var f42: f32 = max(0.01 - pow(length(uvx + 0.45 * pos), 2.4), 0.0) * 5.0;
 	var f43: f32 = max(0.01 - pow(length(uvx + 0.5  * pos), 2.4), 0.0) * 3.0;
-	
+
 	uvx = mix(uv, uvd, vec2<f32>(-0.4, -0.4));
-	
+
 	var f5: f32  = max(0.01 - pow(length(uvx + 0.2 * pos), 5.5), 0.0) * 2.0;
 	var f52: f32 = max(0.01 - pow(length(uvx + 0.4 * pos), 5.5), 0.0) * 2.0;
 	var f53: f32 = max(0.01 - pow(length(uvx + 0.6 * pos), 5.5), 0.0) * 2.0;
-	
+
 	uvx = mix(uv, uvd, vec2<f32>(-0.5, -0.5));
-	
+
 	var f6: f32  = max(0.01 - pow(length(uvx - 0.3   * pos), 1.6), 0.0) * 6.0;
 	var f62: f32 = max(0.01 - pow(length(uvx - 0.325 * pos), 1.6), 0.0) * 3.0;
 	var f63: f32 = max(0.01 - pow(length(uvx - 0.35  * pos), 1.6), 0.0) * 5.0;
-	
+
 	var c: vec3<f32> = vec3<f32>(f0, f0, f0);
-	
+
 	c.r += f2 + f4 + f5 + f6;
     c.g += f22 + f42 + f52 + f62;
     c.b += f23 + f43 + f53 + f63;
-	
+
 	return c;
 }
 `,
@@ -568,21 +533,21 @@ fn anamorphic(uv: vec2<f32>, pos: vec2<f32>, size: f32, thickness: f32) -> f32 {
     let d: vec2<f32> = uv - pos;
     let x: f32 = abs(d.x);
     let y: f32 = abs(d.y);
-    
+
     let w: f32 = max(size, 0.01);
     let h: f32 = max(thickness, 0.001);
-    
+
     // Sharp core streak
     let coreIntensity: f32 = (h * 0.002) / max(y, 0.00001);
     let coreFade: f32 = exp(- (x * x) / (w * w * 0.5));
-    
+
     // Wider, softer glow
     let glowIntensity: f32 = (h * 0.02) / max(y, 0.0001);
     let glowFade: f32 = exp(- (x * x) / (w * w * 2.0));
-    
+
     // Combine layers
     let flare: f32 = coreIntensity * coreFade * 0.8 + glowIntensity * glowFade * 0.2;
-    
+
     return flare;
 }
 `);
@@ -715,20 +680,20 @@ var colorGradeWgsl = wgslFn2(`
 fn colorGrade(color: vec3<f32>, contrast: f32, saturation: f32, blackLevel: f32, blueGreenBoost: f32) -> vec3<f32> {
 	// Contrast
 	var c: vec3<f32> = (color - 0.5) * contrast + 0.5;
-	
+
 	// Saturation
 	var luma: f32 = dot(c, vec3<f32>(0.299, 0.587, 0.114));
 	c = mix(vec3<f32>(luma), c, vec3<f32>(saturation));
-	
+
 	// Deepen blacks
     c = max(c - vec3<f32>(blackLevel), vec3<f32>(0.0));
     // Soft shoulder for highlights
     // c = 1.0 - exp(-c);
-	
+
 	// Enhance blues and greens
 	var bgBoost: vec3<f32> = vec3<f32>(1.0, 1.0 + blueGreenBoost * 0.5, 1.0 + blueGreenBoost);
 	c = c * bgBoost;
-	
+
 	return c;
 }
 `);
@@ -824,13 +789,7 @@ function buildGui(gui, options) {
       });
     }
   });
-  // "Skybox Intensity"/rotación (yaw/pitch/roll) se sacaron de acá: esos
-  // controles solo tienen efecto sobre un "scene.background" que sea una
-  // TEXTURA (el skybox fotográfico que traía el CodePen original) — con
-  // el fondo ahora en negro sólido (pedido explícito, ver "init()" más
-  // arriba) quedarían mudos, sin nada real que mover. "Show/Count" de
-  // estrellas generadas sigue igual: controla "this.backgroundStars",
-  // un sistema de partículas aparte, no afectado por este cambio.
+
   const skyFolder = envGroup.addFolder("Background");
   if (backgroundStarsSettings && backgroundStars) {
     skyFolder.add(backgroundStarsSettings, "enabled").name("Show Generated Stars").onChange((v) => {
@@ -1185,9 +1144,7 @@ var spriteGlow = () => {
   return float2(0.07).div(d.add(0.02)).sub(0.13).clamp(0, 2);
 };
 var BackgroundStars = class {
-  /**
-   * @param {BackgroundStarsOptions} [options]
-   */
+
   constructor({
     count = 4e3,
     radius = 140,
@@ -1205,15 +1162,11 @@ var BackgroundStars = class {
     this.mesh = this.#build(coolColor, warmColor);
     this.mesh.count = this.count;
   }
-  /** Per-instance pseudo-random in [0,1). Salts spaced so hash windows don't overlap. */
+
   #rand(salt) {
     return hash(instanceIndex.add(this.uniforms.seed).add(salt * 1e6));
   }
-  /**
-   * Screen-space size clamp: when a star's projected size drops below ~1.5 px
-   * it starts falling between pixel samples and twinkles as the camera moves.
-   * Hold at minimum size and dim by the covered-area ratio to keep total light constant.
-   */
+
   #stabilize(position, scale) {
     const dist = position.sub(cameraPosition2).length();
     const pxSize = scale.mul(this.uniforms.pixelsPerUnit).div(dist).max(1e-5);
@@ -1247,16 +1200,16 @@ var BackgroundStars = class {
     material.scaleNode = scale;
     return new THREE4.InstancedMesh(new THREE4.PlaneGeometry(1, 1), material, 2e4);
   }
-  /** Update from canvas height + camera FOV (call on resize). */
+
   setPixelsPerUnit(value) {
     this.uniforms.pixelsPerUnit.value = value;
   }
-  /** Update active star count. */
+
   setCount(value) {
     this.count = value;
     this.mesh.count = value;
   }
-  /** Reroll star positions, sizes, and colors. */
+
   setSeed(seed) {
     this.uniforms.seed.value = seed;
   }
@@ -1277,10 +1230,13 @@ var Engine = class {
     this.satelliteData = null;
     this.backgroundStars = null;
     this.earthGroup = null;
-    this.locationAnchors = /* @__PURE__ */ new Map();
+    this.locationAnchors =  new Map();
     this.onLocationsUpdate = null;
     this.focusTargetAnchorId = null;
     this.isDisposed = false;
+    this.paused = false;
+
+    this.initialized = false;
     this.handleResize = () => {
       if (!this.canvas.parentElement || !this.renderer) return;
       const width = this.canvas.parentElement.clientWidth;
@@ -1296,6 +1252,8 @@ var Engine = class {
       }
     };
     this.animate = () => {
+
+      if (this.paused) return;
       this.animationId = requestAnimationFrame(this.animate);
       if (this.focusTargetAnchorId) {
         const anchor = this.locationAnchors.get(this.focusTargetAnchorId);
@@ -1408,20 +1366,7 @@ var Engine = class {
     });
     await this.renderer.init();
     if (this.isDisposed) return;
-    // FIX (adaptado — bug real encontrado al integrar el fallback WebGL):
-    // "vignetteWgsl"/"lensflareWgsl"/"anamorphicWgsl"/"colorGradeWgsl" más
-    // abajo están escritos en WGSL nativo (wgslFn/wgslFn2, ver más arriba
-    // en este archivo) — WGSL es el lenguaje de sombreado propio de
-    // WebGPU, así que esas 4 funciones NO se pueden transpilar a GLSL
-    // cuando el navegador no tiene WebGPU real y WebGPURenderer cae al
-    // backend WebGL2 (confirmado a mano: sin este chequeo, el fragment
-    // shader tira "ERROR: 0:54: 'fn' : syntax error" contra código WGSL
-    // literal y el globo queda con el canvas en negro, aunque el resto
-    // de la escena — beacons, loader — siga funcionando). "bloom"/
-    // "chromaticAberration"/"film"/"smaa" son nodos TSL "normales" del
-    // paquete oficial three/examples — SÍ compilan bien en los dos
-    // backends, se mantienen siempre. El armado condicional del pipeline
-    // está más abajo, donde se arma "finalNode".
+
     this.isWebGLFallback = !!(this.renderer.backend && this.renderer.backend.isWebGLBackend);
     this.renderer.toneMapping = THREE5.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
@@ -1510,17 +1455,7 @@ var Engine = class {
     if (this.isDisposed) return;
     this.scene.add(this.moonMesh);
     this.moonMesh.position.set(0, 0, -100);
-    // Fondo de la escena: negro sólido #000000 (pedido explícito, "para
-    // que durante la transición del scroll no aparezcan áreas blancas")
-    // en vez del skybox fotográfico (textura equirectangular) que traía
-    // el CodePen original — ya no hace falta descargar/decodificar esa
-    // textura. La iluminación del globo (this.directionalLight/
-    // sunDirUniform/sunColorUniform, más arriba) y sus materiales son
-    // 100% independientes de "scene.background": nunca se usó como
-    // "scene.environment" (luz ambiental/reflejos vía IBL), solo como
-    // fondo visual — cambiar esto no les toca nada. Las estrellas
-    // generadas por partículas ("this.backgroundStars", más abajo)
-    // siguen existiendo igual, se ven de sobra contra este negro.
+
     this.scene.background = new THREE5.Color(0, 0, 0);
     if (onProgress) onProgress("Loading Earth Textures (8K)");
     const earth = await createEarth(
@@ -1572,11 +1507,7 @@ var Engine = class {
     this.anamorphicColorUniform = uniform3(
       new THREE5.Color(this.anamorphicSettings.color)
     );
-    // Lens flare + anamorphic streak: SOLO en WebGPU real (ambos escritos
-    // en WGSL nativo, "lensflareWgsl"/"ccWgsl"/"anamorphicWgsl" — ver el
-    // FIX grande más arriba en init()). En el fallback WebGL2 quedan en
-    // negro (vec33(0,0,0)): no aportan nada al pipeline, en vez de tirar
-    // abajo la compilación del shader entero.
+
     const colorFlare = this.isWebGLFallback ? vec33(0, 0, 0) : mul2(
       ccWgsl({
         color: this.sunColorUniform.mul(vec33(1.2, 1.2, 1.2)).mul(
@@ -1609,9 +1540,7 @@ var Engine = class {
     const cgSaturationUniform = uniform3(cgSettings.saturation);
     const cgBlackLevelUniform = uniform3(cgSettings.blackLevel);
     const cgBlueGreenBoostUniform = uniform3(cgSettings.blueGreenBoost);
-    // Color grading (WGSL nativo, "colorGradeWgsl"): en el fallback WebGL2
-    // se salta y se pasa "preColorGrade" directo al tonemap — mismo
-    // motivo que arriba.
+
     const hdrColorGraded = this.isWebGLFallback ? preColorGrade : colorGradeWgsl({
       color: preColorGrade,
       contrast: cgContrastUniform,
@@ -1648,8 +1577,7 @@ var Engine = class {
     );
     const vignetteOffsetUniform = uniform3(this.vignetteSettings.offset);
     let finalNode = sdrToneMapped;
-    // Viñeta (WGSL nativo, "vignetteWgsl"): SOLO en WebGPU real, mismo
-    // motivo que el resto de los efectos "*Wgsl" de acá arriba.
+
     if (!this.isWebGLFallback) {
       finalNode = vignetteWgsl({
         color: finalNode,
@@ -1767,6 +1695,7 @@ var Engine = class {
       await this.renderer.compileAsync(this.scene, this.camera);
     }
     if (!this.isDisposed) {
+      this.initialized = true;
       this.start();
     }
   }
@@ -1886,6 +1815,17 @@ var Engine = class {
   start() {
     this.animate();
   }
+  pauseLoop() {
+    this.paused = true;
+    cancelAnimationFrame(this.animationId);
+  }
+  resumeLoop() {
+    if (this.isDisposed) return;
+
+    const wasPaused = this.paused;
+    this.paused = false;
+    if (wasPaused && this.initialized) this.animate();
+  }
   dispose() {
     this.isDisposed = true;
     cancelAnimationFrame(this.animationId);
@@ -1978,14 +1918,8 @@ var MESSAGE_PROGRESS = {
   "Compiling Shaders (Warmup)": 95,
   "Loading Complete": 100
 };
-// Un formatter de Intl por timezone, cacheado (evita crear un
-// Intl.DateTimeFormat nuevo en cada tick del setInterval de 1s — son
-// solo 3 ciudades, pero no hay motivo para recrearlos 3 veces por
-// segundo). "en-GB" fuerza formato 24hs con separador ":" de forma
-// consistente sin depender del locale del navegador de quien visite el
-// sitio (con "hour12:false" solo, algunos locales igual devuelven un
-// formato distinto).
-var timeFormatterCache = /* @__PURE__ */ new Map();
+
+var timeFormatterCache =  new Map();
 function formatCityTime(date, timezone) {
   let formatter = timeFormatterCache.get(timezone);
   if (!formatter) {
@@ -2047,7 +1981,7 @@ function initVanillaApp() {
   let currentProgress = 0;
   let targetProgress = 10;
   const updateTimes = () => {
-    const now = /* @__PURE__ */ new Date();
+    const now =  new Date();
     for (const loc of CINEMATIC_LOCATIONS) {
       const el = document.getElementById(`time-${loc.id}`);
       if (el) {
@@ -2138,25 +2072,10 @@ function initVanillaApp() {
       }
     }
   };
-  // Modo "explorar" (adaptado del mismo criterio ya usado en el resto del
-  // sitio para visores 3D del Hero, pedido explícito de otra sesión): en
-  // desktop arranca en reposo — el scroll de la página funciona 100%
-  // normal con el cursor encima del globo (OrbitControls empieza
-  // "enabled:false"), recién un click activa el drag-to-rotate/wheel-to-
-  // zoom, y "Esc" devuelve el control del scroll a la página. En touch el
-  // gesto es tipo Google Maps (pedido explícito, ver más abajo): 1 dedo
-  // siempre scrollea la página normal, recién con 2 dedos simultáneos se
-  // activa rotar/zoom del globo.
+
   const heroContainer = canvas.parentElement;
   const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
 
-  // Cursor personalizado "CLICK ME" (pedido explícito, reemplaza el hint
-  // de texto "click y arrastrá para explorar" + el cursor nativo del
-  // mouse sobre el globo). Solo en no-touch: en touch no hay puntero
-  // persistente que seguir y el círculo se oculta por CSS (ver
-  // "@media (max-width:640px)" en style.css). La posición se escribe
-  // directo en "transform" en cada frame con un lerp simple — mucho más
-  // fluido que seguir el mouse 1:1.
   if (!isTouch) {
     const cursorEl = document.getElementById("globeCursor");
     if (cursorEl) {
@@ -2177,11 +2096,7 @@ function initVanillaApp() {
         targetX = currentX = e.clientX;
         targetY = currentY = e.clientY;
         cursorEl.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) translate(-50%, -50%)`;
-        // "is-label" (ver style.css, fix explícito "se ve click me en las
-        // cards"): el texto ahora solo aparece si ESTE listener lo prende a
-        // propósito — ningún otro estado (ni un "mouseleave" que no llegó a
-        // dispararse por el pin/scale del Hero al salir de esta sección)
-        // puede mostrarlo por accidente en otro lado del sitio.
+
         cursorEl.classList.add("is-visible", "is-hover", "is-label");
         if (rafId === null) rafId = requestAnimationFrame(tick);
       });
@@ -2192,10 +2107,7 @@ function initVanillaApp() {
       canvas.addEventListener("mouseleave", () => {
         cursorEl.classList.remove("is-visible", "is-hover", "is-label");
       });
-      // El texto "CLICK ME" solo se ve antes de la primera interacción;
-      // se apaga para siempre (variable en memoria, no hace falta
-      // localStorage: alcanza con que no vuelva mientras la página siga
-      // abierta) apenas el usuario hace el primer click/drag.
+
       canvas.addEventListener("pointerdown", () => {
         cursorEl.classList.add("is-dismissed");
       });
@@ -2204,48 +2116,32 @@ function initVanillaApp() {
 
   const engine = new Engine(canvas);
   engine.onLocationsUpdate = handleLocationsUpdate;
+
+  const heroVisibilityObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) engine.resumeLoop();
+        else engine.pauseLoop();
+      });
+    },
+    { threshold: 0 }
+  );
+  heroVisibilityObserver.observe(heroContainer);
   engine.init(onProgress).then(() => {
     onLoad();
     if (!engine.controls) return;
     engine.controls.enabled = false;
 
     if (isTouch) {
-      // Gesto tipo Google Maps (pedido explícito): con 1 dedo el gesto
-      // pasa de largo como scroll normal de la página; recién con 2
-      // dedos simultáneos se activa rotar/zoom del globo.
-      //
-      // "new OrbitControls(camera, canvas)" ya dejó, en su propio
-      // connect(), "canvas.style.touchAction = 'none'" puesto como
-      // estilo INLINE (ver vendor OrbitControls.js) — sin pisar ESE
-      // valor concreto acá (una regla en style.css no alcanza: un inline
-      // style le gana a cualquier hoja de estilos), el navegador nunca
-      // deja scrollear un toque que arranca sobre el canvas, sin
-      // importar qué haga OrbitControls con ese puntero — ninguno de sus
-      // handlers de touch llama preventDefault() por su cuenta, TODO el
-      // bloqueo de gestos nativos pasa por esta única propiedad CSS.
-      // "pan-y" deja pasar el scroll vertical nativo de 1 dedo, pero
-      // sigue bloqueando el pinch-zoom nativo del navegador con 2 dedos
-      // (ese gesto lo toma OrbitControls en su lugar).
+
       canvas.style.touchAction = "pan-y";
-      // "touches.ONE = null": con un solo dedo, OrbitControls no rota ni
-      // panea nada (cae en su rama interna "default", sin-op) — pero SÍ
-      // sigue trackeando ese puntero, así que si llega un segundo dedo
-      // ya tiene la posición inicial de ambos y el gesto arranca bien
-      // calculado desde el primer frame, sin salto.
+
       engine.controls.touches.ONE = null;
-      // "DOLLY_ROTATE" en vez del PAN por default de la librería: 2
-      // dedos rotan + hacen zoom del globo (mismo gesto principal que el
-      // drag con el mouse en desktop), no paneo lateral del target.
+
       engine.controls.touches.TWO = THREE5.TOUCH.DOLLY_ROTATE;
-      // "enabled:true" permanente en touch — a diferencia de desktop, acá
-      // no hace falta un "primer click" para habilitar nada: un solo
-      // dedo ya es inofensivo por el punto anterior, así que no hace
-      // falta ningún gating extra antes de que un segundo dedo pueda
-      // rotar/zoomear.
+
       engine.controls.enabled = true;
-      // Los eventos "start"/"end" de OrbitControls solo disparan cuando
-      // un gesto de VERDAD arranca/termina (2 dedos) — nunca con un
-      // toque de 1 dedo, que es justo el que queremos ignorar acá.
+
       engine.controls.addEventListener("start", () => {
         if (heroContainer) heroContainer.classList.add("is-exploring");
       });
@@ -2255,36 +2151,12 @@ function initVanillaApp() {
       return;
     }
 
-    // Sin "canvas.style.cursor" acá: en desktop ya quedó en "none" más
-    // arriba (lo reemplaza el cursor custom ".globe-cursor" todo el
-    // tiempo, entrando y saliendo del modo explorar por igual).
-    //
-    // "enableZoom:false" (pedido explícito: "también se tiene que poder
-    // seguir navegando con el scroll") — la rueda del mouse queda 100%
-    // reservada para scrollear la página, SIEMPRE, esté o no explorando.
-    // Antes, una vez adentro del modo explorar, la rueda hacía zoom del
-    // globo y recién volvía a scrollear la página después de un Esc —
-    // quedaba "atrapada" hasta ese momento. Con "enableZoom:false", el
-    // propio "onMouseWheel" interno de
-    // OrbitControls (ver vendor OrbitControls.js) corta ANTES de tocar
-    // el evento ("if (this.enableZoom === false) return;", primera línea
-    // de la función, antes de cualquier "preventDefault()"), así que la
-    // rueda nunca llega a bloquear el scroll nativo, en ningún estado —
-    // ya no hace falta ningún listener de "wheel" propio para lograrlo.
-    // El zoom del globo (arrastrar para rotar sigue intacto) queda fuera
-    // de este widget en desktop; en touch el pinch de 2 dedos sigue
-    // haciendo zoom normal (esto no lo toca, es la misma instancia de
-    // "controls" pero esta rama es exclusiva de desktop).
     engine.controls.enableZoom = false;
     const exitExploring = () => {
       engine.controls.enabled = false;
       if (heroContainer) heroContainer.classList.remove("is-exploring");
     };
-    // "capture:true" para que esto corra ANTES que el propio listener
-    // interno de OrbitControls sobre el mismo evento: así el primer
-    // click ya deja "enabled:true" a tiempo de que OrbitControls
-    // procese ESE MISMO pointerdown — arrastrar sin soltar entra
-    // directo en modo explorar, sin un click extra.
+
     canvas.addEventListener("pointerdown", () => {
       if (engine.controls.enabled) return;
       engine.controls.enabled = true;

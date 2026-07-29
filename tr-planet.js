@@ -1,62 +1,4 @@
-/* ============================================================
-   Efecto "Planet Interior Energy Flow" — card "Nace Sophia" de
-   Trayectoria (pedido explícito, "entre el texto superior de la card
-   y el texto de abajo, mismo criterio que las cards 1 y 2"). Núcleo
-   planetario con venas de energía animadas, shaders GLSL propios +
-   post-processing de bloom (UnrealBloomPass) — efecto autocontenido,
-   adaptado del original en
-   "recursos/glb/planet-interior-energy-flow-three-js (2)/.../src/index.html"
-   (pensado para pantalla completa) a un canvas chico embebido en una
-   card.
-   ----------------------------------------------------------------
-   Módulo ES aparte y autocontenido (mismo criterio que "tr-pcb.js"/
-   "tr-arm.js"/"earth-hero.js"). Cero acoplamiento con script.js ni con
-   el resto de las cards.
 
-   ADAPTACIONES respecto del original (todas pedidos explícitos):
-   1) Versión de Three.js: el efecto original traía SU PROPIO import
-      map con three@0.170.0 aparte — un import map es único por
-      página, así que cargar ese además del que ya usan
-      "earth-hero.js"/"tr-pcb.js"/"tr-arm.js" (three@0.184.0) hubiera
-      significado DOS instancias de Three.js corriendo a la vez. Acá
-      se importa directo de "three"/"three/examples/jsm/..." — el
-      MISMO import map ya declarado en <head> de index.html — sin
-      import map propio. Se verificó a mano que la API que usa el
-      efecto (ShaderMaterial, LineSegments, EffectComposer/
-      UnrealBloomPass, OrbitControls) sigue igual en r184.
-   2) Panel de temas ("#theme-panel", 3 paletas de color
-      seleccionables): se sacó — pedido explícito "evaluar si se
-      mantiene o se remueve... a 300px probablemente no entra bien". Se
-      dejó fijo el primer tema ("Magma & Cyan") sin el sistema de lerp
-      entre temas (con uno solo no hace falta animarlo).
-   3. Textura remota (antes un raw.githubusercontent.com) bajada a
-      "recursos/imagenes/earth_specular_2048.jpg" — más robusto que
-      depender de un host externo en producción.
-   4) Cámara/renderer/composer dimensionados contra el contenedor
-      (~300px) en vez de "window.innerWidth/innerHeight".
-   5) Rendimiento en pantallas chicas (pedido explícito): menos venas
-      y "pixel ratio" tope más bajo por debajo de 900px (mismo corte
-      "mobile" que ya usa el resto del sitio) — el bloom en sí ya es
-      barato acá porque el canvas es chico (pocos píxeles a difuminar),
-      lo que más pesa es la cantidad de geometría de las venas.
-   6) Fondo transparente (pedido explícito, "no negro"): "UnrealBloomPass"
-      de Three.js, cuando es el último pass de un "EffectComposer"
-      (nuestro caso), escribe alpha=1 a TODA la pantalla sin importar
-      el alpha real de la escena — es una limitación conocida del pass
-      en sí (su "blendMaterial" interno compone el brillo con
-      "AdditiveBlending" sobre un buffer de brillo que sale con
-      "alpha" fijo en 1.0, ver su fuente en
-      "examples/jsm/postprocessing/UnrealBloomPass.js"), no algo
-      arreglable solo con "alpha:true" en el renderer. La solución:
-      renderizar la escena una vez aparte, en un render target propio
-      con su alpha real intacto ("sceneRT"), inyectarlo en la cadena
-      del composer con "TexturePass", dejar que "UnrealBloomPass" haga
-      lo suyo (su RGB final es correcto, solo el alpha no), y en un
-      "ShaderPass" final propio recombinar: color = el RGB que salió
-      del bloom, alpha = el de "sceneRT" (el real). Así el brillo del
-      bloom se sigue viendo perfecto y el fondo, donde no hay
-      geometría, queda transparente de verdad.
-   ============================================================ */
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -67,8 +9,6 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 const EARTH_TEXTURE_URL = "recursos/imagenes/earth_specular_2048.jpg";
 const IS_SMALL_SCREEN = window.matchMedia("(max-width: 900px)").matches;
 
-// Tema único fijo ("Magma & Cyan", el primero del efecto original —
-// ver adaptación #2 arriba).
 const THEME = {
   core: [
     new THREE.Color(0.1, 0.0, 0.0),
@@ -171,14 +111,12 @@ function init() {
       renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: true,
-        // Pedido explícito: fondo transparente (no negro/opaco) — así
-        // se integra con el fondo oscuro de la card en vez de mostrar
-        // un cuadrado propio, mismo criterio que ".tr__pcb"/".tr__arm".
+
         alpha: true,
         powerPreference: "low-power",
       });
     } catch (err) {
-      return; // sin WebGL disponible: el resto de la card sigue intacta
+      return;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_SMALL_SCREEN ? 1 : 2));
 
@@ -188,33 +126,14 @@ function init() {
     camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
     camera.position.set(15, 10, 25);
 
-    // "sceneRT": la escena renderizada aparte, a mano, con su alpha
-    // real intacto (ver adaptación #6 en el comentario grande de
-    // arriba) — esto es lo que reemplaza a "RenderPass" dentro del
-    // composer: en vez de que el composer renderice la escena por su
-    // cuenta, se la inyecta ya renderizada vía "TexturePass".
     const sceneRT = new THREE.WebGLRenderTarget(1, 1, {
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
     });
     const texturePass = new TexturePass(sceneRT.texture);
 
-    // FIX (encontrado a mano probando en el contenedor real): el efecto
-    // original usa "strength:2.0" pensado para pantalla completa — a
-    // ~300px el blur de "UnrealBloomPass" corre sobre una cadena de
-    // mips de tamaño FIJO (no proporcional al canvas), así que a esta
-    // resolución esos mismos mips cubren una fracción mucho más grande
-    // del cuadro y el bloom termina "quemando" toda la escena a blanco
-    // en vez de dar solo un halo alrededor del núcleo. Se bajó
-    // strength/radius/threshold hasta que el resultado se lee igual
-    // que el original (núcleo + venas visibles, con un glow sutil) en
-    // vez de un blob blanco — pedido explícito, además, "reducir la
-    // intensidad del bloom... en pantallas chicas".
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), IS_SMALL_SCREEN ? 0.035 : 0.05, 0.25, 0.82);
 
-    // Recompone alpha real (ver adaptación #6): toma el RGB que salió
-    // del bloom (correcto) y el alpha de "sceneRT" (el real, sin tocar
-    // por el bloom).
     const alphaFixPass = new ShaderPass({
       uniforms: {
         tDiffuse: { value: null },
@@ -247,11 +166,11 @@ function init() {
     controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.autoRotate = true; // pedido explícito "mantener el OrbitControls que ya trae"
+    controls.autoRotate = true;
     controls.autoRotateSpeed = 0.8;
     controls.maxDistance = 50;
     controls.minDistance = 12;
-    // Pedido explícito, consistencia con las otras dos cards.
+
     controls.enableZoom = false;
     controls.enablePan = false;
 
@@ -497,10 +416,6 @@ function init() {
     const volcanoMesh = new THREE.Points(volcanoGeo, volcanoMat);
     mainGroup.add(volcanoMesh);
 
-    // Alpha 0 (no el color de fog): el fog en sí sigue funcionando
-    // igual (los elementos lejanos se siguen desvaneciendo hacia ese
-    // color), pero lo que se ve DETRÁS de todo (donde no hay geometría)
-    // ahora es transparente en vez de un cuadrado sólido de ese color.
     renderer.setClearColor(scene.fog.color, 0);
 
     function resize() {
@@ -517,10 +432,6 @@ function init() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Renderiza la escena a mano en "sceneRT" (con su alpha real, ver
-    // adaptación #6 arriba) y recién ahí corre el composer (que la lee
-    // vía "texturePass" y le suma el bloom) — reemplaza los llamados
-    // sueltos a "composer.render()".
     function renderFrame() {
       renderer.setRenderTarget(sceneRT);
       renderer.setClearColor(scene.fog.color, 0);
@@ -541,11 +452,6 @@ function init() {
       renderFrame();
     }
 
-    // La textura solo se usa para el contorno del globo exterior — el
-    // resto del efecto (núcleo + venas) no depende de ella, así que se
-    // arranca a rotar/animar apenas está lista (no hace falta esperarla
-    // para mostrar "algo": en la práctica, siendo un archivo local de
-    // ~220KB, la espera es imperceptible).
     textureLoader.load(
       EARTH_TEXTURE_URL,
       (tex) => {
@@ -557,9 +463,7 @@ function init() {
       },
       undefined,
       () => {
-        // Sin la textura, el contorno del globo exterior no dibuja
-        // nada (queda transparente) pero el núcleo + venas siguen
-        // andando igual — no rompe el resto del efecto.
+
         canvas.classList.add("is-ready");
         if (loaderEl) loaderEl.classList.add("is-hidden");
         if (sectionVisible) startLoop();
@@ -569,7 +473,7 @@ function init() {
 
     startLoopImpl = function startLoopInner() {
       if (rafId !== null) return;
-      clock.getDelta(); // descarta el tiempo acumulado mientras estuvo pausado
+      clock.getDelta();
       rafId = requestAnimationFrame(tick);
     };
   }
@@ -584,13 +488,6 @@ function init() {
     }
   }
 
-  // Carga diferida (pedido explícito: "montar el efecto solo cuando la
-  // card entra en viewport") + pausa de render loop fuera de vista —
-  // "root: #trCards" (la "ventana" fija donde se recortan las cards
-  // que ciclan, ".tr__cards"/"overflow:hidden") en vez del viewport
-  // default, mismo criterio que "tr-pcb.js"/"tr-arm.js": esta card
-  // sigue existiendo en el DOM (y geométricamente "en viewport") aunque
-  // el mazo ya la haya scrolleado fuera de la ventana visible.
   const cardsWindow = document.getElementById("trCards");
   const io = new IntersectionObserver(
     (entries) => {

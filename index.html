@@ -7,25 +7,10 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <!-- DM Mono (títulos/numeración/elementos técnicos) + Instrument Sans
-       (textos/párrafos) — tipografía unificada del sitio. Orbitron: uso
-       puntual y explícito solo para el texto "MENU" del nav desktop
-       (pedido específico, no forma parte de la tipografía general).
-       Geist Mono: uso puntual y explícito solo dentro de la sección
-       "Capacidades" (pedido específico para esa grilla de cards; el
-       resto del sitio sigue en DM Mono). -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Geist+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Globo terráqueo WebGPU del Hero (pedido explícito, adaptado de
-       earth/three-js-webgpu-cinematic-earth/ — ver "earth-hero.js" en la
-       raíz). Import map: resuelve los imports ES module de "three"/
-       "three/webgpu"/"three/tsl"/"three/examples/jsm/*"/"lil-gui" que usa
-       ese script — solo afecta a <script type="module">, no interfiere
-       con los <script> clásicos de GSAP de más abajo. Three.js r184/185
-       acá adentro, independiente de cualquier otra versión de Three que
-       el sitio pueda haber usado antes en otra parte. -->
   <script type="importmap">
     {
       "imports": {
@@ -69,12 +54,6 @@
         <a class="dfy-nav__row" href="#idi-timeline"><span class="dfy-nav__num">03</span><span class="dfy-nav__label">I+D+i</span></a>
         <a class="dfy-nav__row" href="#trayectoria"><span class="dfy-nav__num">04</span><span class="dfy-nav__label">Trayectoria</span></a>
         <a class="dfy-nav__row" href="#contacto"><span class="dfy-nav__num">05</span><span class="dfy-nav__label">Contacto</span></a>
-        <!-- Pedido explícito: solo el logo, sin link ni hover — antes era
-             un "<a>" hacia cadipel.com.ar (ver ".tr__link" en Trayectoria
-             para ese link real). Se deja como "<div>" no interactivo,
-             "aria-hidden" porque es puramente decorativo (nada que anunciar
-             ni a dónde navegar). Ver ".dfy-nav__row--brand:hover" en
-             style.css para el hover que se le sacó. -->
         <div class="dfy-nav__row dfy-nav__row--brand" aria-hidden="true">
           <img class="dfy-nav__brand-logo" src="recursos/imagenes/Logo%20Cadipel.png" alt="Cadipel" loading="lazy" />
         </div>
@@ -106,19 +85,6 @@
         <a class="menu-link" href="#idi-timeline" tabindex="-1"><span>I+D+i</span><span class="link-num">04</span></a>
         <a class="menu-link" href="#trayectoria" tabindex="-1"><span>Trayectoria</span><span class="link-num">05</span></a>
         <a class="menu-link" href="#contacto" tabindex="-1"><span>Contacto</span><span class="link-num">06</span></a>
-        <!-- Logo Cadipel — pedido explícito "sacarle hover y que no sea un
-             link, solo es el logo": ya NO usa ".menu-link" (esa clase es la
-             que script.js recorre para togglear "tabindex" 0/-1 al abrir/
-             cerrar el menú y armar la trampa de foco por Tab — sacándola,
-             el logo queda afuera de esa lógica de foco/teclado por
-             completo, como corresponde a un elemento puramente
-             decorativo). El borde redondeado inferior y la línea
-             separadora que antes heredaba de ".menu-link:last-child"/
-             ".menu-link + .menu-link" ahora están directo en ".menu-brand"
-             (ver style.css) para no depender de esa clase. Se agregó igual
-             a ".menu-brand" en el selector del fade-in de entrada
-             (script.js, "initMenu()") para que la animación de apertura
-             del menú se siga viendo igual que antes. -->
         <div class="menu-brand" aria-hidden="true">
           <img src="recursos/imagenes/Logo%20Cadipel.png" alt="Cadipel" loading="lazy" />
         </div>
@@ -350,13 +316,6 @@
   ============================================================ -->
   <section class="clarity" id="clarity">
     <div class="clarity-content">
-      <!-- "SplitText" (ver script.js) fragmenta estos dos textos en un
-           <span>/<div> por palabra para animar el fade-in — mismo
-           criterio de accesibilidad ya usado en ".contact__title": el
-           original queda "aria-hidden" y hay un duplicado ".sr-only"
-           con el texto íntegro sin fragmentar al lado, mismo tag que
-           el original (preserva el <h2> real del título de cara a
-           navegación por encabezados). -->
       <span class="clarity-eyebrow" aria-hidden="true">Definidos por la experiencia, diseñados para el futuro</span>
       <span class="sr-only">Definidos por la experiencia, diseñados para el futuro</span>
       <h2 class="clarity-title" aria-hidden="true">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
@@ -475,17 +434,6 @@
                 </div>
             </div>
 
-            <!-- ============================================================
-                 PRESENTACIÓN COMERCIAL (PDF embebido)
-                 A propósito DENTRO de #prod-list (es un ítem flex más): así
-                 script.js puede usar el mismo mecanismo de "order" que ya
-                 usa para las filas, y este panel queda posicionado siempre
-                 justo debajo de la fila activa, sin importar que las filas
-                 ocultas sigan reservando su espacio más abajo.
-                 Contenedor único y compartido: se llena dinámicamente con
-                 el PDF del producto activo (según PRODUCT_PDFS en
-                 script.js). Vacío/oculto por defecto.
-            ============================================================ -->
             <div class="prod-presentation" id="prod-presentation" aria-hidden="true"></div>
 
         </div>
@@ -511,12 +459,6 @@
             d="M100,40 C170,150 170,200 100,310 C30,420 30,470 100,580 C170,690 170,740 100,860" />
         </svg>
         <div class="idi__indicator"></div>
-        <!-- Marcadores "CSS Reaction" (pedido explícito, reemplaza al círculo
-             que se pintaba solo) — markup tal cual el original en
-             "recursos/glb/core-css/css-reaction-update-responsive" (3 anillos
-             + 1 punto central), uno por fase. El color/estado "alcanzada" lo
-             sigue decidiendo la misma clase ".is-active" en ".idi__node" de
-             siempre (ver "updateNodes()" en script.js, sin cambios ahí). -->
         <div class="idi__node" data-index="0">
           <span class="idi__node-num">01</span>
           <div class="circles">
@@ -698,16 +640,6 @@
     <div class="contact__inner">
       <div class="contact__intro">
         <span class="contact__eyebrow decode-text">[ Contacto ]</span>
-        <!-- "SplitText" (ver script.js) fragmenta este título en un
-             <span> por palabra para animar el fade-in — eso rompe la
-             semántica para lectores de pantalla (pedido explícito, "no
-             omitir": parte central del efecto original, no un detalle
-             opcional). "aria-hidden" lo saca del árbol de accesibilidad
-             y el <h2 class="sr-only"> de acá abajo (texto íntegro, sin
-             fragmentar) es lo que un lector de pantalla realmente
-             percibe — MISMO tag "h2" que el original (no "p"): así se
-             preserva el heading real para quien navegue por
-             encabezados, no solo el texto. -->
         <h2 class="contact__title" aria-hidden="true">Tenés un proyecto en mente?</h2>
         <h2 class="sr-only">Tenés un proyecto en mente?</h2>
       </div>
@@ -765,18 +697,7 @@
   </section>
 
   <!-- ============================= FOOTER =============================== -->
-  <!-- Rediseño (pedido explícito, réplica del footer de razorpay.com/
-       sprint/26): solo dos elementos, nada de pills/columnas de links/
-       divisor — ver style.css para el detalle de qué se sacó. Mismos
-       íconos/links de redes que el Home (".hero__socials"), copiados
-       tal cual, sin inventar ninguno nuevo. -->
   <footer class="site-footer" id="footer">
-    <!-- Wordmark gigante, desliza sola hacia la izquierda en loop
-         infinito (pedido explícito) — dos copias idénticas del texto en
-         fila ("site-footer__wordmark-item") animadas con un solo
-         "translateX(-50%)" en el TRACK que las contiene: como la
-         segunda copia es igual a la primera, el loop no se nota (ver
-         "@keyframes footer-wordmark-scroll" en style.css). -->
     <div class="site-footer__wordmark reveal-section" aria-hidden="true">
       <div class="site-footer__wordmark-track">
         <span class="site-footer__wordmark-item">SOPHIA TECH CORP</span>
@@ -784,7 +705,6 @@
       </div>
     </div>
 
-    <!-- Copyright + redes: pedido explícito, abajo de todo. -->
     <div class="site-footer__bar">
       <p class="site-footer__copy">Sophia Tech Corp © Todos los derechos reservados <span id="footerYear">2026</span></p>
 
@@ -795,78 +715,20 @@
     </div>
   </footer>
 
-  <!-- FIX (bug real, pedido explícito de otra sesión: "reutilizar el
-       cursor custom del Home" sobre las cards 3D de Trayectoria dejó
-       el círculo apareciendo miles de píxeles fuera de pantalla):
-       ".globe-cursor" es "position:fixed", que normalmente se posiciona
-       contra el VIEWPORT — pero vivía adentro de ".hero" (".hero-3d"),
-       y ".hero" recibe un "transform:scale()" propio en su transición
-       de salida (ver "outgoingPanels"/"initSectionTransitions()" en
-       script.js): CUALQUIER transform en un ancestro convierte a ESE
-       ancestro en el nuevo "contenedor" de todos los "position:fixed"
-       de adentro, en vez del viewport real — mientras solo se usaba
-       para el propio Home (donde ".hero" nunca está transformado
-       mientras el usuario lo está mirando) nunca se notó. Se saca de
-       acá abajo de todo, como hijo directo de "body" — ningún ancestro
-       de acá recibe transform nunca, así que vuelve a comportarse como
-       "fixed" de verdad en cualquier parte de la página. Mismo id
-       ("globeCursor"), mismas clases/CSS — earth-hero.js y el bloque
-       "CURSOR CUSTOM SOBRE LAS CARDS 3D" de script.js lo siguen
-       encontrando igual vía "getElementById", sin cambios ahí. -->
   <div class="globe-cursor" id="globeCursor" aria-hidden="true">
     <span class="globe-cursor__label">Click me</span>
   </div>
 
-  <!-- Bump 3.12.5 -> 3.13.0 (pedido explícito: efecto de texto de
-       Contacto necesita "SplitText", plugin de pago hasta esa versión
-       — desde GSAP 3.13 es gratis para todos, pero recién ahí empezó a
-       publicarse). Los tres archivos pasan de cdnjs a jsdelivr (cdnjs
-       no tiene "SplitText" en ningún lado, ni pago ni gratis) para que
-       las cuatro libs vengan de la MISMA build, sin mezclar versiones.
-       Sin cambios de API entre 3.12.5 y 3.13.0 en gsap/ScrollTrigger/
-       ScrollToPlugin (verificado con el sitio completo después del
-       cambio, este es un sitio grande con ScrollTrigger en casi todas
-       las secciones). -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
-  <!-- PDF.js (pedido explícito: poder pintar de negro la scrollbar del
-       modal "Explorar solución" — imposible con el visor nativo del
-       navegador dentro de un <iframe>, ver "renderPdfIntoModal()" en
-       script.js). Build UMD clásica (expone "window.pdfjsLib" como
-       global, igual que GSAP arriba) — "script.js" chequea si cargó
-       antes de usarla y, si no, vuelve sola al <iframe> de siempre. -->
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="script.js"></script>
-  <!-- Globo terráqueo WebGPU del Hero (pedido explícito) — módulo ES
-       aparte, independiente de GSAP/script.js de arriba (import map en
-       <head>). "defer" implícito por ser type="module": no bloquea el
-       parseo del resto de la página, y corre después de que el DOM esté
-       listo, igual que si estuviera al final del <body>. -->
   <script type="module" src="earth-hero.js"></script>
-  <!-- Modelo 3D "SM_PCB_Modern_06_Low.glb" de la card "Quiénes somos"
-       (Trayectoria, pedido explícito) — módulo ES aparte, mismo
-       criterio que "earth-hero.js": WebGL liviano, autocontenido, no
-       toca script.js ni el resto de la sección/cards. -->
   <script type="module" src="tr-pcb.js"></script>
-  <!-- Modelo 3D "black_honey_robotic_arm" de la card "De la idea a la
-       producción" (Trayectoria, pedido explícito, "igual que se hizo
-       en la primera card con el PCB") — módulo ES aparte, mismo
-       criterio que "tr-pcb.js"/"earth-hero.js". -->
   <script type="module" src="tr-arm.js"></script>
-  <!-- Efecto "Planet Interior Energy Flow" de la card "Nace Sophia"
-       (Trayectoria, pedido explícito, "mismo criterio que las cards 1
-       y 2") — módulo ES aparte. Pedido explícito "unificar a una sola
-       versión de Three.js": usa el MISMO import map de arriba
-       ("three"/"three/examples/jsm/", three@0.184.0) que ya usan
-       "earth-hero.js"/"tr-pcb.js"/"tr-arm.js" — el efecto original
-       traía su propio import map con three@0.170.0 aparte, se adaptó
-       para no cargar una segunda instancia de la librería. -->
   <script type="module" src="tr-planet.js"></script>
-  <!-- Modelo 3D "sci_fi_hud_quillvr" de la card "Hoy" (Trayectoria,
-       pedido explícito, "mismo criterio que las cards anteriores") —
-       módulo ES aparte. -->
   <script type="module" src="tr-hud.js"></script>
 </body>
 </html>
