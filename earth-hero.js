@@ -1233,6 +1233,7 @@ var Engine = class {
     this.focusTargetAnchorId = null;
     this.isDisposed = false;
     this.paused = false;
+    this.isUserDragging = false;
 
     this.initialized = false;
     this.handleResize = () => {
@@ -1285,7 +1286,9 @@ var Engine = class {
       );
       this.sunMesh.position.copy(this.directionalLight.position);
       this.sunDirUniform.value.copy(this.directionalLight.position).normalize();
-      this.root.rotation.y += this.earthSettings.rotationSpeed;
+      if (!this.isUserDragging) {
+        this.root.rotation.y += this.earthSettings.rotationSpeed;
+      }
       this.root.rotation.z = this.earthSettings.trueInclination ? 23.44 * (Math.PI / 180) : 0;
       this.root.traverse((child) => {
         if (child.name === "clouds") {
@@ -1352,7 +1355,7 @@ var Engine = class {
     this.canvas = canvas;
   }
   async init(onProgress) {
-    if (onProgress) onProgress("Initializing WebGPU Renderer");
+    if (onProgress) onProgress("Iniciando Sophia");
     const { WebGPURenderer } = await import("three/webgpu");
     if (this.isDisposed) return;
     let GUICtor = null;
@@ -1380,7 +1383,7 @@ var Engine = class {
     this.renderer.toneMapping = THREE5.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.shadowMap.enabled = false;
-    if (onProgress) onProgress("Setting up Scene & Camera");
+    if (onProgress) onProgress("Preparando el entorno");
     this.camera = new THREE5.PerspectiveCamera(
       CONSTANTS.GUI.CAMERA.FOV,
       1,
@@ -1424,7 +1427,7 @@ var Engine = class {
         this.canvas.parentElement.appendChild(this.stats.dom);
       }
     }
-    if (onProgress) onProgress("Loading Celestial Objects");
+    if (onProgress) onProgress("Cargando el universo");
     this.directionalLight = new THREE5.DirectionalLight(
       CONSTANTS.GUI.SUN.COLOR,
       CONSTANTS.GUI.SUN.INTENSITY
@@ -1468,7 +1471,7 @@ var Engine = class {
     this.moonMesh.position.set(0, 0, -100);
 
     this.scene.background = new THREE5.Color(0, 0, 0);
-    if (onProgress) onProgress("Loading Earth Textures (8K)");
+    if (onProgress) onProgress("Cargando la Tierra");
     const earth = await createEarth(
       this.textureLoader,
       this.sunDirUniform,
@@ -1479,7 +1482,7 @@ var Engine = class {
     this.root.add(earth);
     this.earthGroup = earth;
     this.initLocations();
-    if (onProgress) onProgress("Building Render Pipeline");
+    if (onProgress) onProgress("Ensamblando la experiencia");
     const { RenderPipeline } = await import("three/webgpu");
     if (this.isDisposed) return;
     this.renderPipeline = new RenderPipeline(this.renderer);
@@ -1597,14 +1600,17 @@ var Engine = class {
         offset: vignetteOffsetUniform
       });
     }
-    finalNode = chromaticAberration(
-      finalNode,
-      caStrengthUniform,
-      vec22(0.5, 0.5),
-      caScaleUniform
-    );
-    finalNode = film(finalNode, filmIntensityUniform);
-    this.renderPipeline.outputNode = smaa(finalNode);
+    if (!isMobileOrTablet()) {
+      finalNode = chromaticAberration(
+        finalNode,
+        caStrengthUniform,
+        vec22(0.5, 0.5),
+        caScaleUniform
+      );
+      finalNode = film(finalNode, filmIntensityUniform);
+      finalNode = smaa(finalNode);
+    }
+    this.renderPipeline.outputNode = finalNode;
     this.flareSettings = {
       enabled: CONSTANTS.GUI.LENS_FLARE.ENABLED,
       intensity: CONSTANTS.GUI.LENS_FLARE.INTENSITY
@@ -1700,7 +1706,7 @@ var Engine = class {
     }
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
-    if (onProgress) onProgress("Compiling Shaders (Warmup)");
+    if (onProgress) onProgress("Últimos detalles");
     if (this.renderer && !this.isDisposed) {
       await this.renderer.compileAsync(this.scene, this.camera);
     }
@@ -1919,14 +1925,14 @@ var Engine = class {
 };
 
 var MESSAGE_PROGRESS = {
-  "Initializing WebGPU Renderer": 10,
-  "Setting up Scene & Camera": 20,
-  "Loading Celestial Objects": 30,
-  "Loading Environment Map (PNG)": 50,
-  "Loading Earth Textures (8K)": 70,
-  "Building Render Pipeline": 85,
-  "Compiling Shaders (Warmup)": 95,
-  "Loading Complete": 100
+  "Iniciando Sophia": 10,
+  "Preparando el entorno": 20,
+  "Cargando el universo": 30,
+  "Ajustando la iluminación": 50,
+  "Cargando la Tierra": 70,
+  "Ensamblando la experiencia": 85,
+  "Últimos detalles": 95,
+  "Listo": 100
 };
 
 var timeFormatterCache =  new Map();
@@ -2027,7 +2033,7 @@ function initVanillaApp() {
     targetProgress = 100;
     currentProgress = 100;
     updateProgressUI(100);
-    if (messageValEl) messageValEl.textContent = "Loading Complete";
+    if (messageValEl) messageValEl.textContent = "Listo";
     setTimeout(() => {
       if (loaderEl) {
         loaderEl.style.opacity = "0";
@@ -2162,16 +2168,22 @@ function initVanillaApp() {
       canvas.addEventListener("touchstart", (e) => {
         if (e.touches.length !== 1) {
           axisLocked = null;
+          engine.isUserDragging = false;
+          engine.controls.enabled = true;
           return;
         }
         startX = lastX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         axisLocked = null;
+        engine.isUserDragging = true;
+        engine.controls.enabled = false;
       }, { passive: true });
 
       canvas.addEventListener("touchmove", (e) => {
         if (e.touches.length !== 1) {
           axisLocked = null;
+          engine.isUserDragging = false;
+          engine.controls.enabled = true;
           return;
         }
         const touch = e.touches[0];
@@ -2198,9 +2210,13 @@ function initVanillaApp() {
 
       canvas.addEventListener("touchend", () => {
         axisLocked = null;
+        engine.isUserDragging = false;
+        engine.controls.enabled = true;
       }, { passive: true });
       canvas.addEventListener("touchcancel", () => {
         axisLocked = null;
+        engine.isUserDragging = false;
+        engine.controls.enabled = true;
       }, { passive: true });
 
       engine.controls.addEventListener("start", () => {
