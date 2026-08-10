@@ -8,12 +8,7 @@ const GLB_URL = "recursos/glb/PCB_Modern_06_GLB/SM_PCB_Modern_06_Low.opt.glb";
 const AUTO_ROTATE_SPEED = 0.7;
 const RESUME_IDLE_MS = 3500;
 
-function init() {
-  const container = document.querySelector(".tr__pcb");
-  const canvas = document.querySelector(".tr__pcb-canvas");
-  const loaderEl = document.getElementById("trPcbLoader");
-  if (!container || !canvas) return;
-
+function initScene(container, canvas, loaderEl) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
@@ -23,7 +18,7 @@ function init() {
       powerPreference: "low-power",
     });
   } catch (err) {
-    return;
+    return null;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -121,7 +116,7 @@ function init() {
   }
 
   let modelReady = false;
-  let sectionVisible = false;
+  let sectionVisible = true;
   let loadStarted = false;
 
   function loadModel() {
@@ -157,26 +152,48 @@ function init() {
     frameCamera();
   });
 
+  loadModel();
+
+  return {
+    onVisible() {
+      sectionVisible = true;
+      if (!modelReady) loadModel();
+      else startLoop();
+    },
+    onHidden() {
+      sectionVisible = false;
+      stopLoop();
+    },
+  };
+}
+
+function boot() {
+  const container = document.querySelector(".tr__pcb");
+  const canvas = document.querySelector(".tr__pcb-canvas");
+  const loaderEl = document.getElementById("trPcbLoader");
+  if (!container || !canvas) return;
+
   const cardsWindow = document.getElementById("trCards");
+  let scene = null;
+
   const io = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        sectionVisible = entry.isIntersecting;
-        if (sectionVisible) {
-          if (!modelReady) loadModel();
-          else startLoop();
-        } else {
-          stopLoop();
+        if (entry.isIntersecting) {
+          if (!scene) scene = initScene(container, canvas, loaderEl);
+          else scene.onVisible();
+        } else if (scene) {
+          scene.onHidden();
         }
       });
     },
-    { root: cardsWindow, rootMargin: "30% 0px" }
+    { root: cardsWindow, rootMargin: "300px" }
   );
   io.observe(container);
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", boot);
 } else {
-  init();
+  boot();
 }

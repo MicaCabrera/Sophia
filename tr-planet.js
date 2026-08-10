@@ -501,7 +501,7 @@ function init() {
         }
       });
     },
-    { root: cardsWindow, rootMargin: "30% 0px" }
+    { root: cardsWindow, rootMargin: "300px" }
   );
   io.observe(container);
 }

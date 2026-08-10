@@ -15,8 +15,6 @@ import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js";
 import { smaa } from "three/examples/jsm/tsl/display/SMAANode.js";
 import { chromaticAberration } from "three/examples/jsm/tsl/display/ChromaticAberrationNode.js";
 import { film } from "three/examples/jsm/tsl/display/FilmNode.js";
-import GUI from "lil-gui";
-import Stats from "three/examples/jsm/libs/stats.module.js";
 
 var isMobileOrTablet = () => {
   if (typeof window === "undefined") return false;
@@ -59,7 +57,7 @@ var CONSTANTS = {
     ALBEDO: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_daymap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_daymap.jpg",
     NIGHT: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_nightmap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_nightmap.jpg",
     SPECULAR: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_specular_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_specular_map.jpg",
-    NORMAL: use2k ? "https://www.dsp-studio.ro/globe/8k_earth_normal_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_normal_map.jpg",
+    NORMAL: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_normal_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_normal_map.jpg",
     CLOUDS: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_clouds.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_clouds.jpg",
     STARS: use2k ? "https://www.dsp-studio.ro/globe/starmap_2k.jpg" : "https://www.dsp-studio.ro/globe/starmap_8k.jpg",
     MOON_ALBEDO: use2k ? "https://www.dsp-studio.ro/globe/2k_moon.jpg" : "https://www.dsp-studio.ro/globe/8k_moon.jpg",
@@ -1357,6 +1355,17 @@ var Engine = class {
     if (onProgress) onProgress("Initializing WebGPU Renderer");
     const { WebGPURenderer } = await import("three/webgpu");
     if (this.isDisposed) return;
+    let GUICtor = null;
+    let StatsCtor = null;
+    if (CONSTANTS.GUI.SHOW) {
+      const [{ default: GUIImport }, { default: StatsImport }] = await Promise.all([
+        import("lil-gui"),
+        import("three/examples/jsm/libs/stats.module.js")
+      ]);
+      if (this.isDisposed) return;
+      GUICtor = GUIImport;
+      StatsCtor = StatsImport;
+    }
     this.renderer = new WebGPURenderer({
       canvas: this.canvas,
       antialias: true,
@@ -1405,13 +1414,15 @@ var Engine = class {
       this.focusTargetAnchorId = null;
     });
     this.textureLoader = new THREE5.TextureLoader();
-    this.stats = new Stats();
-    this.stats.dom.style.position = "absolute";
-    this.stats.dom.style.top = "0px";
-    this.stats.dom.style.left = "0px";
-    this.stats.dom.style.display = CONSTANTS.GUI.DEBUG.STATS ? "block" : "none";
-    if (this.canvas.parentElement) {
-      this.canvas.parentElement.appendChild(this.stats.dom);
+    this.stats = StatsCtor ? new StatsCtor() : null;
+    if (this.stats) {
+      this.stats.dom.style.position = "absolute";
+      this.stats.dom.style.top = "0px";
+      this.stats.dom.style.left = "0px";
+      this.stats.dom.style.display = CONSTANTS.GUI.DEBUG.STATS ? "block" : "none";
+      if (this.canvas.parentElement) {
+        this.canvas.parentElement.appendChild(this.stats.dom);
+      }
     }
     if (onProgress) onProgress("Loading Celestial Objects");
     this.directionalLight = new THREE5.DirectionalLight(
@@ -1633,61 +1644,60 @@ var Engine = class {
     this.citiesSettings = {
       enabled: CONSTANTS.GUI.CITIES?.ENABLED !== void 0 ? CONSTANTS.GUI.CITIES.ENABLED : false
     };
-    this.gui = new GUI({ title: "Engine Settings" });
-    if (!CONSTANTS.GUI.SHOW) {
-      this.gui.hide();
+    if (GUICtor) {
+      this.gui = new GUICtor({ title: "Engine Settings" });
+      const debugSettings = { stats: CONSTANTS.GUI.DEBUG.STATS };
+      this.stats.dom.style.display = debugSettings.stats ? "block" : "none";
+      buildGui(this.gui, {
+        cgSettings,
+        cgUniforms: {
+          contrast: cgContrastUniform,
+          saturation: cgSaturationUniform,
+          blackLevel: cgBlackLevelUniform,
+          blueGreenBoost: cgBlueGreenBoostUniform
+        },
+        moonSettings: this.moonSettings,
+        moonMesh: this.moonMesh,
+        flareSettings: this.flareSettings,
+        anamorphicSettings: this.anamorphicSettings,
+        bloomSettings: this.bloomSettings,
+        bloomPass,
+        caSettings: this.caSettings,
+        caUniforms: {
+          strength: caStrengthUniform,
+          scale: caScaleUniform
+        },
+        filmSettings: this.filmSettings,
+        filmUniforms: {
+          intensity: filmIntensityUniform
+        },
+        vignetteSettings: this.vignetteSettings,
+        vignetteUniforms: {
+          darkness: vignetteDarknessUniform,
+          offset: vignetteOffsetUniform
+        },
+        earth,
+        controls: this.controls,
+        camera: this.camera,
+        scene: this.scene,
+        directionalLight: this.directionalLight,
+        sunMaterial: this.sunMesh.material,
+        sunSettings: this.sunSettings,
+        debugSettings,
+        statsDom: this.stats.dom,
+        earthSettings: this.earthSettings,
+        renderSettings: this.renderSettings,
+        onResize: this.handleResize,
+        renderer: this.renderer,
+        canvas: this.canvas,
+        renderPipeline: this.renderPipeline,
+        satelliteSettings: this.satelliteSettings,
+        satellitePoints: this.satellitePoints,
+        backgroundStarsSettings: this.backgroundStarsSettings,
+        backgroundStars: this.backgroundStars,
+        citiesSettings: this.citiesSettings
+      });
     }
-    const debugSettings = { stats: CONSTANTS.GUI.DEBUG.STATS };
-    this.stats.dom.style.display = debugSettings.stats ? "block" : "none";
-    buildGui(this.gui, {
-      cgSettings,
-      cgUniforms: {
-        contrast: cgContrastUniform,
-        saturation: cgSaturationUniform,
-        blackLevel: cgBlackLevelUniform,
-        blueGreenBoost: cgBlueGreenBoostUniform
-      },
-      moonSettings: this.moonSettings,
-      moonMesh: this.moonMesh,
-      flareSettings: this.flareSettings,
-      anamorphicSettings: this.anamorphicSettings,
-      bloomSettings: this.bloomSettings,
-      bloomPass,
-      caSettings: this.caSettings,
-      caUniforms: {
-        strength: caStrengthUniform,
-        scale: caScaleUniform
-      },
-      filmSettings: this.filmSettings,
-      filmUniforms: {
-        intensity: filmIntensityUniform
-      },
-      vignetteSettings: this.vignetteSettings,
-      vignetteUniforms: {
-        darkness: vignetteDarknessUniform,
-        offset: vignetteOffsetUniform
-      },
-      earth,
-      controls: this.controls,
-      camera: this.camera,
-      scene: this.scene,
-      directionalLight: this.directionalLight,
-      sunMaterial: this.sunMesh.material,
-      sunSettings: this.sunSettings,
-      debugSettings,
-      statsDom: this.stats.dom,
-      earthSettings: this.earthSettings,
-      renderSettings: this.renderSettings,
-      onResize: this.handleResize,
-      renderer: this.renderer,
-      canvas: this.canvas,
-      renderPipeline: this.renderPipeline,
-      satelliteSettings: this.satelliteSettings,
-      satellitePoints: this.satellitePoints,
-      backgroundStarsSettings: this.backgroundStarsSettings,
-      backgroundStars: this.backgroundStars,
-      citiesSettings: this.citiesSettings
-    });
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     if (onProgress) onProgress("Compiling Shaders (Warmup)");
