@@ -1170,7 +1170,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   
   
-  const PHASE_VH = 1;
+  const PHASE_VH = 0.85;
   const END_BUFFER_VH = 0.5;
   const SCALE_FADE_VH = 1; 
   const STEPS_VH = PHASE_VH * TOTAL;
@@ -1294,6 +1294,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const isMobile = window.matchMedia("(max-width: 900px)").matches;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (isMobile) {
+    const dotsContainer = document.getElementById("trCardsDots");
+    const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll(".tr__cards-dot")) : [];
+    const prevBtn = section.querySelector(".tr__cards-arrow--prev");
+    const nextBtn = section.querySelector(".tr__cards-arrow--next");
+
+    function getCenteredIndex() {
+      const containerCenter = cardsWindow.scrollLeft + cardsWindow.clientWidth / 2;
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+      cards.forEach((card, i) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(cardCenter - containerCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
+        }
+      });
+      return closestIndex;
+    }
+
+    function updateDots() {
+      const activeIndex = getCenteredIndex();
+      dots.forEach((dot, i) => dot.classList.toggle("is-active", i === activeIndex));
+    }
+
+    function scrollToIndex(index) {
+      const clamped = Math.max(0, Math.min(cards.length - 1, index));
+      cards[clamped].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+
+    updateDots();
+
+    let scrollRaf = null;
+    cardsWindow.addEventListener(
+      "scroll",
+      () => {
+        if (scrollRaf) return;
+        scrollRaf = requestAnimationFrame(() => {
+          updateDots();
+          scrollRaf = null;
+        });
+      },
+      { passive: true }
+    );
+
+    if (prevBtn) prevBtn.addEventListener("click", () => scrollToIndex(getCenteredIndex() - 1));
+    if (nextBtn) nextBtn.addEventListener("click", () => scrollToIndex(getCenteredIndex() + 1));
+    dots.forEach((dot, i) => dot.addEventListener("click", () => scrollToIndex(i)));
+  }
+
   if (isMobile || prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
     return;
   }

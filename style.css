@@ -1764,7 +1764,7 @@ a {
   font-weight: 400;
   font-size: 15px;
   line-height: 1.5;
-  color: rgba(13, 13, 13, 0.55);
+  color: var(--black);
   margin: 0;
 }
 
@@ -2514,7 +2514,11 @@ a {
 
 
 
-@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+.tr__cards-nav {
+  display: none;
+}
+
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
   .tr__cards {
     width: 100%;
     aspect-ratio: auto;
@@ -2543,9 +2547,102 @@ a {
     gap: clamp(32px, 6vw, 48px);
   }
 
-  
+
   .tr__intro {
     order: -1;
+  }
+
+  .tr__cards {
+    width: 100%;
+    aspect-ratio: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tr__cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tr__cards-track {
+    flex-direction: row;
+    gap: 16px;
+    transform: none !important;
+  }
+
+  .tr__card {
+    scroll-snap-align: center;
+    flex-shrink: 0;
+    width: 100%;
+    aspect-ratio: auto;
+  }
+
+  .tr__cards-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .tr__cards-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 0;
+    color: var(--bone);
+    cursor: pointer;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+
+  .tr__cards-arrow svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  .tr__cards-arrow--prev svg {
+    transform: scaleX(-1);
+  }
+
+  .tr__cards-arrow:hover,
+  .tr__cards-arrow:focus-visible {
+    background: #000000;
+    border-color: #000000;
+    color: var(--blue-light);
+    outline: none;
+  }
+
+  .tr__cards-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tr__cards-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: var(--color-gray);
+    opacity: 0.35;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+  }
+
+  .tr__cards-dot.is-active {
+    background: var(--blue-light);
+    opacity: 1;
   }
 }
 
