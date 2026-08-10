@@ -2152,6 +2152,57 @@ function initVanillaApp() {
 
       engine.controls.enabled = true;
 
+      const ROTATE_SENSITIVITY = 0.005;
+      const AXIS_LOCK_THRESHOLD = 8;
+      let startX = 0;
+      let startY = 0;
+      let lastX = 0;
+      let axisLocked = null;
+
+      canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1) {
+          axisLocked = null;
+          return;
+        }
+        startX = lastX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        axisLocked = null;
+      }, { passive: true });
+
+      canvas.addEventListener("touchmove", (e) => {
+        if (e.touches.length !== 1) {
+          axisLocked = null;
+          return;
+        }
+        const touch = e.touches[0];
+
+        if (axisLocked === null) {
+          const totalDeltaX = touch.clientX - startX;
+          const totalDeltaY = touch.clientY - startY;
+          if (
+            Math.abs(totalDeltaX) < AXIS_LOCK_THRESHOLD &&
+            Math.abs(totalDeltaY) < AXIS_LOCK_THRESHOLD
+          ) {
+            return;
+          }
+          axisLocked = Math.abs(totalDeltaX) > Math.abs(totalDeltaY) ? "x" : "y";
+        }
+
+        if (axisLocked === "x") {
+          e.preventDefault();
+          const incrementalDeltaX = touch.clientX - lastX;
+          engine.root.rotation.y += incrementalDeltaX * ROTATE_SENSITIVITY;
+        }
+        lastX = touch.clientX;
+      }, { passive: false });
+
+      canvas.addEventListener("touchend", () => {
+        axisLocked = null;
+      }, { passive: true });
+      canvas.addEventListener("touchcancel", () => {
+        axisLocked = null;
+      }, { passive: true });
+
       engine.controls.addEventListener("start", () => {
         if (heroContainer) heroContainer.classList.add("is-exploring");
       });
