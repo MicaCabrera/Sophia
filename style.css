@@ -1124,8 +1124,8 @@ a {
   overflow: hidden;
   background: #ffffff;
   display: flex;
-  align-items: flex-start;
-  padding: clamp(96px, 16vh, 160px) 40px 64px;
+  align-items: center;
+  padding: 40px;
   box-sizing: border-box;
 }
 
@@ -1160,7 +1160,8 @@ a {
 
 @media (max-width: 640px) {
   .clarity {
-    padding: 88px 20px 48px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .clarity-eyebrow {
@@ -2007,7 +2008,9 @@ a {
 
 @media (max-width: 640px) {
   .idi-timeline {
+    align-items: flex-start;
     padding: 20px;
+    padding-top: clamp(200px, 34vh, 260px);
   }
 
   .idi__process {

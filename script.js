@@ -387,7 +387,10 @@ function initSectionTransitions() {
   
   
   let resizeTimeout;
+  let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return; // solo cambió el alto (barra de direcciones mobile), ignorar
+    lastWidth = window.innerWidth;
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => ScrollTrigger.refresh(), 200);
   });
@@ -419,6 +422,7 @@ function initSectionTransitions() {
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, SplitText);
 ScrollTrigger.defaults({ anticipatePin: 1, invalidateOnRefresh: true });
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 
 function initCapacidadesGrid() {
@@ -567,7 +571,10 @@ document.addEventListener("DOMContentLoaded", () => {
   
   
   let capsResizeTimeout;
+  let capsLastWidth = window.innerWidth;
   window.addEventListener("resize", () => {
+    if (window.innerWidth === capsLastWidth) return; // solo cambió el alto (barra de direcciones mobile), ignorar
+    capsLastWidth = window.innerWidth;
     clearTimeout(capsResizeTimeout);
     capsResizeTimeout = setTimeout(() => ScrollTrigger.refresh(), 200);
   });
