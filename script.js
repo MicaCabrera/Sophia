@@ -490,9 +490,8 @@ function initConsultingScroll() {
   if (!TOTAL || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isMobile = window.matchMedia('(max-width: 900px)').matches;
 
-  if (isMobile || prefersReducedMotion) {
+  if (prefersReducedMotion) {
     panels.forEach((panel) => panel.classList.add('is-active'));
     return;
   }

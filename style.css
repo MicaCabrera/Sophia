@@ -1439,7 +1439,61 @@ a {
 }
 
 
-@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
+@media (max-width: 900px) {
+  #consultoria {
+    /* Bigger than the 1024px gutter: the ruler marker's badge (line + "01" pill)
+       needs more clearance on narrow screens than it does on tablet-sized ones. */
+    --consulting-gutter-left: clamp(64px, 18vw, 80px);
+  }
+
+  .consulting__stage {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 clamp(20px, 6vw, 32px) 0 var(--consulting-gutter-left);
+    gap: 0;
+  }
+
+  .consulting__step-title {
+    font-size: clamp(26px, 7.4vw, 32px);
+  }
+
+  .consulting__panel-item,
+  .consulting__particles {
+    display: none;
+  }
+
+  .consulting__intro {
+    display: block;
+  }
+
+  .consulting__intro-left {
+    display: block;
+    margin-bottom: clamp(28px, 6vw, 40px);
+  }
+
+  .consulting__eyebrow {
+    margin: 0 0 clamp(20px, 3vw, 28px);
+  }
+
+  .consulting__intro-right {
+    align-items: flex-start;
+  }
+
+  .consulting__title {
+    max-width: none;
+  }
+}
+
+
+@media (max-width: 640px) {
+  .consulting__intro {
+    padding: clamp(64px, 13vh, 100px) 16px clamp(40px, 8vw, 56px) var(--consulting-gutter-left);
+  }
+}
+
+
+/* Accessibility fallback: at any screen size, skip the scroll-jacked pin and
+   show every step's text at once, in normal document flow. */
+@media (prefers-reduced-motion: reduce) {
   .consulting__pinned {
     height: auto;
     min-height: 0;
@@ -1485,92 +1539,6 @@ a {
     position: relative;
     height: min(50vh, 420px);
     margin-bottom: clamp(32px, 5vw, 48px);
-  }
-}
-
-
-@media (max-width: 900px) {
-  #consultoria {
-    --consulting-gutter-left: clamp(20px, 6vw, 32px);
-  }
-
-  .consulting__pinned {
-    height: auto;
-    min-height: 0;
-  }
-
-  .consulting__ruler {
-    display: none;
-  }
-
-  .consulting__stage {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    padding: clamp(48px, 10vw, 72px) clamp(20px, 6vw, 32px) clamp(48px, 10vw, 72px) var(--consulting-gutter-left);
-  }
-
-  .consulting__text-window,
-  .consulting__text-track,
-  .consulting__steps,
-  .consulting__step {
-    display: contents;
-  }
-
-  .consulting__step-text {
-    flex: none;
-    height: auto;
-  }
-
-  .consulting__step-text[data-step="0"] { order: 0; }
-  .consulting__panel-item[data-step="0"] { order: 1; }
-  .consulting__step-text[data-step="1"] { order: 2; }
-  .consulting__panel-item[data-step="1"] { order: 3; }
-  .consulting__step-text[data-step="2"] { order: 4; }
-  .consulting__panel-item[data-step="2"] { order: 5; }
-
-  .consulting__step-title {
-    font-size: clamp(26px, 7.4vw, 32px);
-  }
-
-  .consulting__panel-item {
-    display: none;
-  }
-
-  .consulting__particles {
-    order: -1;
-    align-self: stretch;
-    position: relative;
-    height: 220px;
-    margin-bottom: clamp(32px, 8vw, 48px);
-  }
-
-  .consulting__intro {
-    display: block;
-  }
-
-  .consulting__intro-left {
-    display: block;
-    margin-bottom: clamp(28px, 6vw, 40px);
-  }
-
-  .consulting__eyebrow {
-    margin: 0 0 clamp(20px, 3vw, 28px);
-  }
-
-  .consulting__intro-right {
-    align-items: flex-start;
-  }
-
-  .consulting__title {
-    max-width: none;
-  }
-}
-
-
-@media (max-width: 640px) {
-  .consulting__intro {
-    padding: clamp(64px, 13vh, 100px) 16px clamp(40px, 8vw, 56px) var(--consulting-gutter-left);
   }
 }
 
