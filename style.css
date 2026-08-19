@@ -1203,8 +1203,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
   color: var(--color-primary);
   box-sizing: border-box;
 }
@@ -3061,7 +3061,7 @@ a {
 }
 
 .tr__link:hover .tr__link-arrow {
-  color: var(--blue-light);
+  color: var(--bone);
 }
 
 
@@ -3388,8 +3388,8 @@ a {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   color: var(--color-primary);
   box-sizing: border-box;
 }
