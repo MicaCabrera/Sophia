@@ -1336,16 +1336,6 @@ a {
   box-sizing: border-box;
 }
 
-.consulting__step-num {
-  display: block;
-  font-family: 'Geist Mono', 'DM Mono', monospace;
-  font-weight: 700;
-  font-size: clamp(13px, 1.1vw, 15px);
-  letter-spacing: 0.14em;
-  color: var(--color-primary);
-  margin: 0 0 12px;
-}
-
 .consulting__step-title {
   font-family: var(--font-body);
   font-weight: 500;
@@ -1400,10 +1390,6 @@ a {
 
 .consulting__panel-item[data-step="2"] {
   background: transparent;
-}
-
-.consulting__panel-watermark {
-  display: none;
 }
 
 .consulting__particles {
@@ -1490,13 +1476,7 @@ a {
   .consulting__panel-item[data-step="2"] { order: 5; }
 
   .consulting__panel-item {
-    margin-top: clamp(16px, 3vw, 24px);
-    margin-bottom: clamp(48px, 8vw, 64px);
-    height: min(50vh, 420px);
-  }
-
-  .consulting__panel-item[data-step="2"] {
-    margin-bottom: 0;
+    display: none;
   }
 
   .consulting__particles {
@@ -1554,13 +1534,7 @@ a {
   }
 
   .consulting__panel-item {
-    margin-top: clamp(16px, 4vw, 24px);
-    margin-bottom: clamp(48px, 10vw, 64px);
-    height: 220px;
-  }
-
-  .consulting__panel-item[data-step="2"] {
-    margin-bottom: 0;
+    display: none;
   }
 
   .consulting__particles {
@@ -2015,56 +1989,6 @@ a {
 .prod-presentation-toggle:hover .prod-presentation-plus {
   transform: rotate(90deg);
 }
-
-
-.prod-presentation-body {
-  height: 0;
-  
-  max-width: 720px;
-  margin: 0 auto;
-  overflow: hidden;
-  
-  overscroll-behavior: contain;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  border-top: 0px solid rgba(255, 255, 255, 0.08);
-  transition: height 0.6s var(--ease-premium, ease),
-              border-top-width 0.4s ease;
-}
-
-.prod-presentation.is-open .prod-presentation-body {
-  height: 480px; 
-  border-top-width: 1px;
-}
-
-
-.prod-presentation-body iframe {
-  display: block;
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
-  border: none;
-  border-radius: 4px;
-  overscroll-behavior: contain;
-}
-
-
-@media (max-width: 880px) {
-  .prod-presentation-body {
-    max-width: 100%;
-  }
-
-  .prod-presentation.is-open .prod-presentation-body {
-    height: 400px;
-  }
-
-  .prod-presentation-body iframe {
-    width: calc(100% - 24px);
-    height: calc(100% - 24px);
-  }
-}
-
 
 
 .pdf-modal {

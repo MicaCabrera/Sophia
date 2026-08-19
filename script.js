@@ -1656,6 +1656,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  const titleEl = document.querySelector(".consulting__title");
+  if (!titleEl || typeof SplitText === "undefined" || typeof ScrollTrigger === "undefined") return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.fonts.ready.then(() => {
+    const split = SplitText.create(titleEl, { type: "words", aria: "hidden" });
+
+    if (prefersReducedMotion) {
+      gsap.set(split.words, { opacity: 1 });
+      return;
+    }
+
+    gsap.from(split.words, {
+      opacity: 0,
+      duration: 1.2,
+      ease: "sine.out",
+      stagger: 0.08,
+      scrollTrigger: {
+        trigger: titleEl,
+        start: "top 85%",
+        once: true,
+        invalidateOnRefresh: false,
+      },
+    });
+  });
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
   const titleEl = document.querySelector(".contact__title");
   if (!titleEl || typeof SplitText === "undefined" || typeof ScrollTrigger === "undefined") return;
 
