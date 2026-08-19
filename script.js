@@ -363,23 +363,81 @@ function initSectionTransitions() {
   
   const claritySection = document.getElementById('clarity');
   const clarityContent = claritySection ? claritySection.querySelector('.clarity-content') : null;
+  let clarityWaitDuration = 0.4;
   if (claritySection) {
-    gsap
-      .timeline({
+    const clarityEyebrowEl = claritySection.querySelector('.clarity-eyebrow');
+    const clarityTitleEl = claritySection.querySelector('.clarity-title');
+    const clarityPrefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document.fonts.ready.then(() => {
+      const canSplitClarity = clarityEyebrowEl && clarityTitleEl && typeof SplitText !== 'undefined';
+      const eyebrowSplit = canSplitClarity ? SplitText.create(clarityEyebrowEl, { type: 'words', aria: 'hidden' }) : null;
+      const titleSplit = canSplitClarity ? SplitText.create(clarityTitleEl, { type: 'words', aria: 'hidden' }) : null;
+
+      if (clarityPrefersReducedMotion) {
+        if (eyebrowSplit) gsap.set(eyebrowSplit.words, { opacity: 1 });
+        if (titleSplit) gsap.set(titleSplit.words, { opacity: 1 });
+      }
+
+
+      const REVEAL_DURATION = 2;
+      const REVEAL_STAGGER = 0.1;
+      const TITLE_OFFSET = 0.4;
+
+      const eyebrowRevealEnd = eyebrowSplit && eyebrowSplit.words.length
+        ? REVEAL_DURATION + (eyebrowSplit.words.length - 1) * REVEAL_STAGGER
+        : 0;
+      const titleRevealEnd = titleSplit && titleSplit.words.length
+        ? TITLE_OFFSET + REVEAL_DURATION + (titleSplit.words.length - 1) * REVEAL_STAGGER
+        : 0;
+      const waitDuration = clarityPrefersReducedMotion
+        ? 0.4
+        : Math.max(0.4, eyebrowRevealEnd, titleRevealEnd);
+      clarityWaitDuration = waitDuration;
+
+      // La duración "original" del exit (0.9 + 0.1) se usaba como referencia para
+      // repartir proporcionalmente los px de scroll entre reveal y exit. Guardamos
+      // esa proporción (pxPerUnit) para que el reveal ocupe la misma cantidad de
+      // scroll que ya tenía, pero le damos al exit exactamente un viewport de scroll
+      // real (marginBottom = revealPixels) para que la sección siguiente empiece a
+      // entrar justo cuando arranca el fade de salida, y termine de entrar justo
+      // cuando ese fade termina — sin hueco muerto ni superposición con el reveal.
+      const EXIT_SCALE_DURATION = 0.9;
+      const EXIT_FINAL_DURATION = 0.1;
+      const EXIT_CONTENT_DURATION = 0.3;
+      const referenceDistance = window.innerHeight * 1.1;
+      const referenceTotalUnits = waitDuration + EXIT_SCALE_DURATION + EXIT_FINAL_DURATION;
+      const pxPerUnit = referenceDistance / referenceTotalUnits;
+      const revealPixels = waitDuration * pxPerUnit;
+      const exitPixels = window.innerHeight;
+      const exitUnitScale = (exitPixels / pxPerUnit) / (EXIT_SCALE_DURATION + EXIT_FINAL_DURATION);
+
+      claritySection.style.marginBottom = revealPixels + 'px';
+
+      const tl = gsap.timeline({
         scrollTrigger: {
           trigger: claritySection,
           start: 'bottom bottom',
-          end: () => '+=' + window.innerHeight * 1.1,
+          end: () => '+=' + (revealPixels + window.innerHeight),
           pinSpacing: false,
           pin: true,
           scrub: true,
         },
-      })
-      .to({}, { duration: 0.4 }) 
-      .addLabel('exitStart')
-      .fromTo(claritySection, { scale: 1, opacity: 1, pointerEvents: 'auto' }, { scale: 0.92, opacity: 0.55, duration: 0.9 }, 'exitStart')
-      .fromTo(clarityContent || claritySection, { opacity: 1 }, { opacity: 0, duration: 0.3 }, 'exitStart')
-      .to(claritySection, { opacity: 0, pointerEvents: 'none', duration: 0.1 });
+      });
+
+      if (eyebrowSplit && !clarityPrefersReducedMotion) {
+        tl.from(eyebrowSplit.words, { opacity: 0, duration: REVEAL_DURATION, ease: 'sine.out', stagger: REVEAL_STAGGER }, 0);
+      }
+      if (titleSplit && !clarityPrefersReducedMotion) {
+        tl.from(titleSplit.words, { opacity: 0, duration: REVEAL_DURATION, ease: 'sine.out', stagger: REVEAL_STAGGER }, TITLE_OFFSET);
+      }
+
+      tl.to({}, { duration: waitDuration }, 0)
+        .addLabel('exitStart')
+        .fromTo(claritySection, { opacity: 1, pointerEvents: 'auto' }, { opacity: 0.55, duration: EXIT_SCALE_DURATION * exitUnitScale }, 'exitStart')
+        .fromTo(clarityContent || claritySection, { opacity: 1 }, { opacity: 0, duration: EXIT_CONTENT_DURATION * exitUnitScale }, 'exitStart')
+        .to(claritySection, { opacity: 0, pointerEvents: 'none', duration: EXIT_FINAL_DURATION * exitUnitScale });
+    });
   }
 
   
@@ -392,8 +450,206 @@ function initSectionTransitions() {
     if (window.innerWidth === lastWidth) return; // solo cambió el alto (barra de direcciones mobile), ignorar
     lastWidth = window.innerWidth;
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => ScrollTrigger.refresh(), 200);
+    resizeTimeout = setTimeout(() => {
+      if (claritySection) {
+        const referenceDistance = window.innerHeight * 1.1;
+        const referenceTotalUnits = clarityWaitDuration + 0.9 + 0.1;
+        const revealPixels = clarityWaitDuration * (referenceDistance / referenceTotalUnits);
+        claritySection.style.marginBottom = revealPixels + 'px';
+      }
+      ScrollTrigger.refresh();
+    }, 200);
   });
+}
+
+
+
+
+const CONSULTING_RULER_TICK_SIZE = 12;
+
+function alignConsultingRulerMarker() {
+  const rulerMarker = document.getElementById('consultingRulerMarker');
+  const rulerEl = document.querySelector('.consulting__ruler');
+  if (!rulerMarker || !rulerEl) return;
+  const height = rulerEl.offsetHeight;
+  if (!height) return;
+  const nearestTick = Math.round((height / 2) / CONSULTING_RULER_TICK_SIZE) * CONSULTING_RULER_TICK_SIZE;
+  rulerMarker.style.top = nearestTick + 'px';
+}
+
+function initConsultingScroll() {
+  const section = document.getElementById('consultoria');
+  const pinnedEl = document.getElementById('consultingPinned');
+  const rulerNum = document.getElementById('consultingRulerNum');
+  const track = document.getElementById('consultingTextTrack');
+  const panels = gsap.utils.toArray('.consulting__panel-item', section);
+  alignConsultingRulerMarker();
+  if (!section || !pinnedEl || !track || !panels.length) return;
+
+  const TOTAL = panels.length;
+  if (!TOTAL || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+
+  if (isMobile || prefersReducedMotion) {
+    panels.forEach((panel) => panel.classList.add('is-active'));
+    return;
+  }
+
+  const consultingSpan = TOTAL - 1;
+  const finalYPercent = -100 * (consultingSpan / TOTAL);
+  const titleEls = gsap.utils.toArray('.consulting__step-title', track);
+
+  let consultingCurrentIdx = 0;
+
+  function setConsultingActive(idx) {
+    if (idx === consultingCurrentIdx) return;
+    consultingCurrentIdx = idx;
+    panels.forEach((panel, i) => panel.classList.toggle('is-active', i === idx));
+    if (rulerNum) {
+      gsap.killTweensOf(rulerNum);
+      gsap
+        .timeline()
+        .to(rulerNum, { opacity: 0, scale: 0.7, duration: 0.12, ease: 'power2.in' })
+        .call(() => {
+          rulerNum.textContent = String(idx + 1).padStart(2, '0');
+        })
+        .to(rulerNum, { opacity: 1, scale: 1, duration: 0.18, ease: 'back.out(2)' });
+    }
+  }
+
+  const CONSULTING_STEP_VH = 1.1;
+
+  ScrollTrigger.create({
+    trigger: pinnedEl,
+    start: 'top top',
+    end: () => '+=' + window.innerHeight * CONSULTING_STEP_VH * TOTAL,
+    pin: true,
+    scrub: 0.1,
+    onUpdate: (self) => {
+      const p = self.progress;
+      const scaled = p * consultingSpan;
+      const idx = Math.min(TOTAL - 1, Math.max(0, Math.round(scaled)));
+
+      gsap.set(track, { yPercent: p * finalYPercent });
+
+      titleEls.forEach((titleEl, i) => {
+        const dist = Math.abs(scaled - i);
+        const focus = gsap.utils.clamp(0, 1, 1 - dist);
+        gsap.set(titleEl, {
+          scale: gsap.utils.interpolate(0.82, 1, focus),
+          color: gsap.utils.interpolate('#9a9a9a', '#0d0d0d', focus),
+          transformOrigin: 'left center',
+        });
+      });
+
+      setConsultingActive(idx);
+
+      window.dispatchEvent(new CustomEvent('consultoria:progress', { detail: { p, scaled, idx } }));
+    },
+  });
+}
+
+
+function initPixelTrail(section, zones = [section]) {
+  zones = (zones || []).filter(Boolean);
+  if (!section || !zones.length) return;
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  if (prefersReducedMotion || isTouch) return;
+
+  const PIXEL_SIZE = 12;
+  const MIN_DISTANCE = 12;
+  const FADE_SPEED = 0.04;
+
+  const zoneLayers = zones.map((zone) => {
+    const layer = document.createElement('div');
+    layer.className = 'pixel-trail-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    zone.appendChild(layer);
+    return { zone, layer };
+  });
+
+  let lastZone = null;
+  let lastX = 0;
+  let lastY = 0;
+  let pixelId = 0;
+  const activePixels = new Map();
+
+  function spawnPixel(layer, x, y) {
+    const el = document.createElement('div');
+    el.className = 'pixel-trail-pixel';
+    el.style.left = (x - PIXEL_SIZE / 2) + 'px';
+    el.style.top = (y - PIXEL_SIZE / 2) + 'px';
+    el.style.width = PIXEL_SIZE + 'px';
+    el.style.height = PIXEL_SIZE + 'px';
+    layer.appendChild(el);
+
+    const id = pixelId++;
+    activePixels.set(id, { el, opacity: 1 });
+  }
+
+  function handleTrailMove(e) {
+    const match = zoneLayers.find(({ zone }) => zone.contains(e.target));
+    if (!match) return;
+
+    const rect = match.zone.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (match.zone !== lastZone) {
+      lastZone = match.zone;
+      lastX = x;
+      lastY = y;
+      return;
+    }
+
+    const dx = x - lastX;
+    const dy = y - lastY;
+    if (Math.sqrt(dx * dx + dy * dy) > MIN_DISTANCE) {
+      spawnPixel(match.layer, x, y);
+      lastX = x;
+      lastY = y;
+    }
+  }
+
+  section.addEventListener('mousemove', handleTrailMove);
+
+  let trailVisible = true;
+  let trailRaf = null;
+
+  function tickTrail() {
+    activePixels.forEach((pixel, id) => {
+      pixel.opacity -= FADE_SPEED;
+      if (pixel.opacity <= 0) {
+        pixel.el.remove();
+        activePixels.delete(id);
+      } else {
+        pixel.el.style.opacity = pixel.opacity;
+        pixel.el.style.transform = 'scale(' + Math.max(0.3, pixel.opacity) + ')';
+      }
+    });
+    trailRaf = trailVisible ? requestAnimationFrame(tickTrail) : null;
+  }
+
+  if ('IntersectionObserver' in window) {
+    const trailIO = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          trailVisible = entry.isIntersecting;
+          if (trailVisible && trailRaf === null) {
+            trailRaf = requestAnimationFrame(tickTrail);
+          }
+        });
+      },
+      { threshold: 0 }
+    );
+    trailIO.observe(section);
+  }
+
+  trailRaf = requestAnimationFrame(tickTrail);
 }
 
 
@@ -541,12 +797,13 @@ function initCapacidadesGrid() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initCapacidadesGrid();
+  initConsultingScroll();
+  initPixelTrail(document.getElementById('consultoria'), [
+    document.querySelector('.consulting__intro'),
+    document.getElementById('consultingPinned'),
+  ]);
+  initPixelTrail(document.getElementById('idi-timeline'));
 
-  
-  
-  
-  
-  
   initSectionTransitions();
 
   
@@ -576,7 +833,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.innerWidth === capsLastWidth) return; // solo cambió el alto (barra de direcciones mobile), ignorar
     capsLastWidth = window.innerWidth;
     clearTimeout(capsResizeTimeout);
-    capsResizeTimeout = setTimeout(() => ScrollTrigger.refresh(), 200);
+    capsResizeTimeout = setTimeout(() => {
+      ScrollTrigger.refresh();
+      alignConsultingRulerMarker();
+    }, 200);
   });
 });
 
@@ -597,6 +857,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("load", () => {
     ScrollTrigger.refresh();
     syncPinSpacerBackgrounds();
+    alignConsultingRulerMarker();
   });
 });
 
@@ -1390,47 +1651,6 @@ document.addEventListener("DOMContentLoaded", () => {
     onUpdate: (self) => {
       updateTrack(self.progress);
     },
-  });
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const claritySection = document.getElementById("clarity");
-  const eyebrowEl = document.querySelector(".clarity-eyebrow");
-  const titleEl = document.querySelector(".clarity-title");
-  if (!claritySection || !eyebrowEl || !titleEl || typeof SplitText === "undefined" || typeof ScrollTrigger === "undefined") {
-    return;
-  }
-
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  document.fonts.ready.then(() => {
-    const eyebrowSplit = SplitText.create(eyebrowEl, { type: "words", aria: "hidden" });
-    const titleSplit = SplitText.create(titleEl, { type: "words", aria: "hidden" });
-
-    if (prefersReducedMotion) {
-      gsap.set(eyebrowSplit.words, { opacity: 1 });
-      gsap.set(titleSplit.words, { opacity: 1 });
-      return;
-    }
-
-    gsap
-      .timeline({
-        scrollTrigger: {
-          trigger: claritySection,
-          start: "top 80%",
-          once: true,
-          
-          
-          
-          
-          
-          
-          invalidateOnRefresh: false,
-        },
-      })
-      .from(eyebrowSplit.words, { opacity: 0, duration: 2, ease: "sine.out", stagger: 0.1 }, 0)
-      .from(titleSplit.words, { opacity: 0, duration: 2, ease: "sine.out", stagger: 0.1 }, 0.4);
   });
 });
 

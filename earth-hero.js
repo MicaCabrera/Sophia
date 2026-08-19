@@ -45,23 +45,32 @@ var getInitialResolutionScale = () => {
   }
 };
 
+var WEBGPU_FALLBACK_KEY = "sophia_earth_force_webgl";
+var webgpuFallbackRequested = (() => {
+  try {
+    return typeof sessionStorage !== "undefined" && sessionStorage.getItem(WEBGPU_FALLBACK_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+})();
+
 var use2k = true;
 var CONSTANTS = {
-  RENDER_TYPE: "webgpu",
+  RENDER_TYPE: webgpuFallbackRequested ? "webgl" : "webgpu",
 
   EARTH_RADIUS: 10,
   ATMOSPHERE_RADIUS: 10.2,
   SEGMENTS: use2k ? 64 : 256,
 
   TEXTURES: {
-    ALBEDO: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_daymap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_daymap.jpg",
-    NIGHT: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_nightmap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_nightmap.jpg",
-    SPECULAR: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_specular_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_specular_map.jpg",
-    NORMAL: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_normal_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_normal_map.jpg",
-    CLOUDS: use2k ? "https://www.dsp-studio.ro/globe/2k_earth_clouds.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_clouds.jpg",
-    STARS: use2k ? "https://www.dsp-studio.ro/globe/starmap_2k.jpg" : "https://www.dsp-studio.ro/globe/starmap_8k.jpg",
-    MOON_ALBEDO: use2k ? "https://www.dsp-studio.ro/globe/2k_moon.jpg" : "https://www.dsp-studio.ro/globe/8k_moon.jpg",
-    MOON_DISPLACEMENT: use2k ? "https://www.dsp-studio.ro/globe/ldem_4.png" : "https://www.dsp-studio.ro/globe/ldem_4.png"
+    ALBEDO: use2k ? "recursos/imagenes/earth/2k_earth_daymap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_daymap.jpg",
+    NIGHT: use2k ? "recursos/imagenes/earth/2k_earth_nightmap.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_nightmap.jpg",
+    SPECULAR: use2k ? "recursos/imagenes/earth/2k_earth_specular_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_specular_map.jpg",
+    NORMAL: use2k ? "recursos/imagenes/earth/2k_earth_normal_map.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_normal_map.jpg",
+    CLOUDS: use2k ? "recursos/imagenes/earth/2k_earth_clouds.jpg" : "https://www.dsp-studio.ro/globe/8k_earth_clouds.jpg",
+    STARS: use2k ? "recursos/imagenes/earth/starmap_2k.jpg" : "https://www.dsp-studio.ro/globe/starmap_8k.jpg",
+    MOON_ALBEDO: use2k ? "recursos/imagenes/earth/2k_moon.jpg" : "https://www.dsp-studio.ro/globe/8k_moon.jpg",
+    MOON_DISPLACEMENT: use2k ? "recursos/imagenes/earth/ldem_4.png" : "https://www.dsp-studio.ro/globe/ldem_4.png"
   },
   GUI: {
 
@@ -206,14 +215,30 @@ var CINEMATIC_LOCATIONS = [
 import * as THREE from "three";
 import { texture, normalMap, mix, normalize, cross, cameraPosition, positionWorld, pow, dot, max, vec3, vec2, smoothstep, uniform, equirectUV, positionLocal, modelWorldMatrixInverse, vec4, length, acos, sub, float, min, bumpMap } from "three/tsl";
 import { MeshBasicNodeMaterial, MeshPhysicalNodeMaterial } from "three/webgpu";
+
+function loadTextureWithRetry(loader, url, { retries = 2, timeoutMs = 8000, backoffMs = 500 } = {}) {
+  const attempt = (attemptsLeft) => {
+    const load = loader.loadAsync(url);
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`Timeout loading texture: ${url}`)), timeoutMs);
+    });
+    return Promise.race([load, timeout]).catch((err) => {
+      if (attemptsLeft <= 0) throw err;
+      console.warn(`Retrying texture load (${attemptsLeft} left): ${url}`, err);
+      return new Promise((resolve) => setTimeout(resolve, backoffMs)).then(() => attempt(attemptsLeft - 1));
+    });
+  };
+  return attempt(retries);
+}
+
 async function createEarth(loader, sunDirUniform, moonPosUniform, maxAnisotropy = 1) {
   const group = new THREE.Group();
   const [colorMapTex, specularMapTex, normalMapTex, cloudsMapTex, nightMapTex] = await Promise.all([
-    loader.loadAsync(CONSTANTS.TEXTURES.ALBEDO),
-    loader.loadAsync(CONSTANTS.TEXTURES.SPECULAR),
-    loader.loadAsync(CONSTANTS.TEXTURES.NORMAL),
-    loader.loadAsync(CONSTANTS.TEXTURES.CLOUDS),
-    loader.loadAsync(CONSTANTS.TEXTURES.NIGHT)
+    loadTextureWithRetry(loader, CONSTANTS.TEXTURES.ALBEDO),
+    loadTextureWithRetry(loader, CONSTANTS.TEXTURES.SPECULAR),
+    loadTextureWithRetry(loader, CONSTANTS.TEXTURES.NORMAL),
+    loadTextureWithRetry(loader, CONSTANTS.TEXTURES.CLOUDS),
+    loadTextureWithRetry(loader, CONSTANTS.TEXTURES.NIGHT)
   ]);
   colorMapTex.colorSpace = THREE.SRGBColorSpace;
   cloudsMapTex.colorSpace = THREE.SRGBColorSpace;
@@ -427,10 +452,10 @@ async function createMoon(textureLoader, maxAnisotropy = 1) {
   const geoHigh = new THREE2.SphereGeometry(radius, segmentsHigh, segmentsHigh);
   const geoMed = new THREE2.SphereGeometry(radius, segmentsMed, segmentsMed);
   const geoLow = new THREE2.SphereGeometry(radius, segmentsLow, segmentsLow);
-  const map = await textureLoader.loadAsync(CONSTANTS.TEXTURES.MOON_ALBEDO);
+  const map = await loadTextureWithRetry(textureLoader, CONSTANTS.TEXTURES.MOON_ALBEDO);
   map.colorSpace = THREE2.SRGBColorSpace;
   map.anisotropy = maxAnisotropy;
-  const displacementMap = await textureLoader.loadAsync(CONSTANTS.TEXTURES.MOON_DISPLACEMENT);
+  const displacementMap = await loadTextureWithRetry(textureLoader, CONSTANTS.TEXTURES.MOON_DISPLACEMENT);
   displacementMap.anisotropy = maxAnisotropy;
   const material = new THREE2.MeshStandardMaterial({
     map,
@@ -1380,6 +1405,23 @@ var Engine = class {
     if (this.isDisposed) return;
 
     this.isWebGLFallback = !!(this.renderer.backend && this.renderer.backend.isWebGLBackend);
+    if (!this.isWebGLFallback && CONSTANTS.RENDER_TYPE === "webgpu") {
+      try {
+        const gpuDevice = this.renderer.backend && this.renderer.backend.device;
+        if (gpuDevice && typeof gpuDevice.addEventListener === "function") {
+          let fallbackTriggered = false;
+          gpuDevice.addEventListener("uncapturederror", (event) => {
+            if (fallbackTriggered) return;
+            fallbackTriggered = true;
+            console.error("WebGPU device error, reloading with WebGL fallback:", event.error);
+            try {
+              sessionStorage.setItem(WEBGPU_FALLBACK_KEY, "1");
+            } catch (e) {}
+            window.location.reload();
+          });
+        }
+      } catch (e) {}
+    }
     this.renderer.toneMapping = THREE5.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.shadowMap.enabled = false;

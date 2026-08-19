@@ -19,7 +19,8 @@
         "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
         "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
         "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
-        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.21.0/dist/lil-gui.esm.js"
+        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.21.0/dist/lil-gui.esm.js",
+        "simplex-noise": "https://esm.sh/simplex-noise@4.0.1"
       }
     }
   </script>
@@ -138,6 +139,18 @@
       </div>
     </div>
   </header>
+
+  <!-- ============================================================
+       SECCIÓN
+  ============================================================ -->
+  <section class="clarity" id="clarity">
+    <div class="clarity-content">
+      <span class="clarity-eyebrow" aria-hidden="true">Definidos por la experiencia, diseñados para el futuro</span>
+      <span class="sr-only">Definidos por la experiencia, diseñados para el futuro</span>
+      <h2 class="clarity-title" aria-hidden="true">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
+      <h2 class="sr-only">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
+    </div>
+  </section>
 
   <!-- ============================================================
        SECCIÓN "CAPACIDADES" —
@@ -313,15 +326,104 @@
 </section>
 
   <!-- ============================================================
-       SECCIÓN 
+       SECCIÓN "CONSULTORÍA IA" — Scrollytelling 3 pasos
   ============================================================ -->
-  <section class="clarity" id="clarity">
-    <div class="clarity-content">
-      <span class="clarity-eyebrow" aria-hidden="true">Definidos por la experiencia, diseñados para el futuro</span>
-      <span class="sr-only">Definidos por la experiencia, diseñados para el futuro</span>
-      <h2 class="clarity-title" aria-hidden="true">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
-      <h2 class="sr-only">Reunimos experiencia, tecnología y talento para desarrollar soluciones que resuelven los desafíos más complejos de la actualidad</h2>
+  <section id="consultoria">
+
+    <div class="consulting__intro">
+      <div class="consulting__intro-left">
+        <span class="consulting__eyebrow decode-text">[ Consultoría IA ]</span>
+        <h2 class="consulting__title">
+          <span class="consulting__title-strong">Antes de invertir en IA,</span> <br>
+          <span class="consulting__title-soft"> entendé dónde realmente la necesitás. </span>
+        </h2>
+      </div>
+      <div class="consulting__intro-right">
+        <p class="consulting__lead">
+          La mayoría de las empresas no falla por elegir mal la tecnología, sino por no saber por dónde
+          empezar.<br> Nuestro equipo de consultoría en Inteligencia Artificial trabaja junto a tu empresa para
+          identificar dónde la IA puede generar impacto real, no una promesa genérica, sino una guía de
+          aplicabilidad concreta que tu equipo puede ejecutar.
+        </p>
+        <a class="consulting__intro-cta" href="#contacto">
+          <span class="consulting__intro-cta-bracket">[</span>
+          <span class="consulting__intro-cta-label">Agendemos una consultoría</span>
+          <span class="consulting__intro-cta-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/></svg>
+          </span>
+          <span class="consulting__intro-cta-bracket">]</span>
+        </a>
+      </div>
     </div>
+
+    <div class="consulting__pinned" id="consultingPinned">
+      <div class="consulting__ruler" aria-hidden="true">
+        <div class="consulting__ruler-ticks"></div>
+        <div class="consulting__ruler-marker" id="consultingRulerMarker">
+          <span class="consulting__ruler-marker-num" id="consultingRulerNum">01</span>
+        </div>
+      </div>
+
+      <div class="consulting__stage">
+        <div class="consulting__text-window">
+          <div class="consulting__text-track" id="consultingTextTrack">
+
+            <div class="consulting__step-text" data-step="0">
+              <h3 class="consulting__step-title">Diagnóstico</h3>
+              <p class="consulting__step-desc">
+                Relevamos tus procesos, datos y objetivos de negocio para identificar dónde la IA resuelve
+                un problema real, no dónde está de moda aplicarla.
+              </p>
+            </div>
+
+            <div class="consulting__step-text" data-step="1">
+              <h3 class="consulting__step-title">Guía de aplicabilidad</h3>
+              <p class="consulting__step-desc">
+                Te entregamos un documento concreto: qué aplicar, en qué orden, con qué tecnología y qué
+                resultado esperar en cada etapa. Es tuyo, lo podés ejecutar con o sin nosotros.
+              </p>
+            </div>
+
+            <div class="consulting__step-text" data-step="2">
+
+              <h3 class="consulting__step-title">Acompañamiento</h3>
+              <p class="consulting__step-desc">
+                No te dejamos solo con el PDF. Acompañamos la implementación, ajustamos el plan sobre la
+                marcha y resolvemos junto a tu equipo lo que aparezca en el camino.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="consulting__steps" id="consultingSteps">
+
+          <article class="consulting__step" data-step="0">
+            <div class="consulting__panel-item is-active" data-step="0" data-consulting-media="diagnostico">
+              <span class="consulting__panel-watermark">01</span>
+            </div>
+          </article>
+
+          <article class="consulting__step" data-step="1">
+            <div class="consulting__panel-item" data-step="1" data-consulting-media="guia-aplicabilidad">
+              <span class="consulting__panel-watermark">02</span>
+            </div>
+          </article>
+
+          <article class="consulting__step" data-step="2">
+            <div class="consulting__panel-item" data-step="2" data-consulting-media="acompanamiento">
+              <span class="consulting__panel-watermark">03</span>
+            </div>
+          </article>
+
+          <div class="consulting__particles" aria-hidden="true">
+            <img class="consulting__particles-image" src="recursos/imagenes/consultoria/consultoria.png" alt="" loading="lazy" />
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </section>
 
 <!-- ============================================================
@@ -638,11 +740,13 @@
             innovación: el mismo estándar de ingeniería, ahora aplicado a la IA.
           </p>
 
-          <a class="tr__link" href="https://www.cadipel.com.ar/" target="_blank" rel="noopener">
-            <span>Conocé Cadipel</span>
+          <a class="tr__link cta-link--on-blue" href="https://www.cadipel.com.ar/" target="_blank" rel="noopener">
+            <span class="tr__link-bracket">[</span>
+            <span class="tr__link-label">Conocé Cadipel</span>
             <span class="tr__link-arrow" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/></svg>
             </span>
+            <span class="tr__link-bracket">]</span>
           </a>
         </div>
       </div>
@@ -701,10 +805,12 @@
 
         <div class="contact__submit-row">
           <button class="contact__submit" type="submit">
-            <span>Enviar</span>
+            <span class="contact__submit-bracket">[</span>
+            <span class="contact__submit-label">Enviar</span>
             <span class="contact__submit-arrow" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/></svg>
             </span>
+            <span class="contact__submit-bracket">]</span>
           </button>
           <p class="contact__status" id="contactStatus" role="status" aria-live="polite"></p>
         </div>
@@ -740,7 +846,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=20260819"></script>
   <script type="module" src="earth-hero.js"></script>
   <script type="module" src="tr-pcb.js"></script>
   <script type="module" src="tr-arm.js"></script>
