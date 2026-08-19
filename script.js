@@ -518,7 +518,8 @@ function initConsultingScroll() {
     }
   }
 
-  const CONSULTING_STEP_VH = 1.1;
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  const CONSULTING_STEP_VH = isMobile ? 0.8 : 1.1;
 
   ScrollTrigger.create({
     trigger: pinnedEl,

@@ -1445,17 +1445,20 @@ a {
        .idi-caption: clamp(24px, 4.4-5vw, 56-64px)), plus a small amount of
        clearance for the ruler marker's compact mobile badge (see below). */
     --consulting-gutter-left: clamp(44px, 12vw, 52px);
-    --consulting-mobile-window-h: min(50vh, 420px);
-    /* Content sits near the top of the pinned viewport on mobile instead of
-       dead-center, so the gap after the intro's CTA stays short. */
-    --consulting-mobile-top-gap: clamp(20px, 5vw, 28px);
+    /* Tall enough that centering it in the pinned viewport doesn't leave a big
+       empty band above/below — see .consulting__stage's align-items: center. */
+    --consulting-mobile-window-h: min(76dvh, 620px);
+  }
+
+  .consulting__pinned {
+    height: 100vh;
+    height: 100dvh;
   }
 
   .consulting__ruler {
     left: clamp(14px, 3.5vw, 18px);
-    top: var(--consulting-mobile-top-gap);
-    bottom: auto;
-    height: var(--consulting-mobile-window-h);
+    top: calc((100% - var(--consulting-mobile-window-h)) / 2);
+    bottom: calc((100% - var(--consulting-mobile-window-h)) / 2);
   }
 
   /* Drop the connecting line and shrink the badge so the marker's footprint
@@ -1476,8 +1479,8 @@ a {
 
   .consulting__stage {
     grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    padding: var(--consulting-mobile-top-gap) clamp(20px, 6vw, 32px) 0 var(--consulting-gutter-left);
+    align-items: center;
+    padding: 0 clamp(20px, 6vw, 32px) 0 var(--consulting-gutter-left);
     gap: 0;
   }
 
