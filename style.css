@@ -1441,19 +1441,61 @@ a {
 
 @media (max-width: 900px) {
   #consultoria {
-    /* Bigger than the 1024px gutter: the ruler marker's badge (line + "01" pill)
-       needs more clearance on narrow screens than it does on tablet-sized ones. */
-    --consulting-gutter-left: clamp(64px, 18vw, 80px);
+    /* Same left margin the rest of the site's mobile sections use (.pa__inner,
+       .idi-caption: clamp(24px, 4.4-5vw, 56-64px)), plus a small amount of
+       clearance for the ruler marker's compact mobile badge (see below). */
+    --consulting-gutter-left: clamp(44px, 12vw, 52px);
+    --consulting-mobile-window-h: min(50vh, 420px);
+    /* Content sits near the top of the pinned viewport on mobile instead of
+       dead-center, so the gap after the intro's CTA stays short. */
+    --consulting-mobile-top-gap: clamp(20px, 5vw, 28px);
+  }
+
+  .consulting__ruler {
+    left: clamp(14px, 3.5vw, 18px);
+    top: var(--consulting-mobile-top-gap);
+    bottom: auto;
+    height: var(--consulting-mobile-window-h);
+  }
+
+  /* Drop the connecting line and shrink the badge so the marker's footprint
+     fits inside the tighter mobile gutter without overlapping the step text. */
+  .consulting__ruler-marker {
+    left: 4px;
+    gap: 0;
+  }
+
+  .consulting__ruler-marker::before {
+    display: none;
+  }
+
+  .consulting__ruler-marker-num {
+    font-size: 9px;
+    padding: 2px 5px;
   }
 
   .consulting__stage {
     grid-template-columns: minmax(0, 1fr);
-    padding: 0 clamp(20px, 6vw, 32px) 0 var(--consulting-gutter-left);
+    align-items: start;
+    padding: var(--consulting-mobile-top-gap) clamp(20px, 6vw, 32px) 0 var(--consulting-gutter-left);
     gap: 0;
+  }
+
+  .consulting__text-window {
+    height: var(--consulting-mobile-window-h);
+  }
+
+  .consulting__step-text {
+    flex-basis: var(--consulting-mobile-window-h);
+    height: var(--consulting-mobile-window-h);
   }
 
   .consulting__step-title {
     font-size: clamp(26px, 7.4vw, 32px);
+  }
+
+  .consulting__intro-cta-label {
+    white-space: nowrap;
   }
 
   .consulting__panel-item,
@@ -1463,6 +1505,11 @@ a {
 
   .consulting__intro {
     display: block;
+    /* Unlike .consulting__stage, the intro text has no ruler next to it, so it
+       can use the exact same left margin as the rest of the site's mobile
+       sections (.pa__inner, .idi-caption) instead of the ruler-safe gutter. */
+    padding-left: clamp(24px, 4.4vw, 56px);
+    padding-bottom: clamp(24px, 5vw, 32px);
   }
 
   .consulting__intro-left {
@@ -1484,9 +1531,17 @@ a {
 }
 
 
+@media (max-width: 480px) {
+  .consulting__intro-cta {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+}
+
+
 @media (max-width: 640px) {
   .consulting__intro {
-    padding: clamp(64px, 13vh, 100px) 16px clamp(40px, 8vw, 56px) var(--consulting-gutter-left);
+    padding: clamp(64px, 13vh, 100px) 16px clamp(40px, 8vw, 56px) clamp(24px, 4.4vw, 56px);
   }
 }
 
