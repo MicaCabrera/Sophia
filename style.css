@@ -984,6 +984,41 @@ a {
   box-sizing: border-box;
 }
 
+/* Shared chromatic-aberration hover glitch, reused by every button arrow icon
+   on the site (.pa__card-arrow, .consulting__intro-cta-arrow, .tr__link-arrow,
+   .tr__cards-arrow, .contact__submit-arrow). Uses drop-shadow instead of
+   transform so it never fights a component's own transform (e.g. the
+   scaleX(-1) flip on .tr__cards-arrow--prev svg). */
+@keyframes btn-arrow-glitch {
+  0%, 100% {
+    filter: none;
+  }
+  8% {
+    filter: drop-shadow(2px 0 0 rgba(255, 0, 90, 0.7)) drop-shadow(-2px 0 0 rgba(0, 220, 255, 0.7));
+  }
+  16% {
+    filter: none;
+  }
+  24% {
+    filter: drop-shadow(-2px 1px 0 rgba(255, 0, 90, 0.7)) drop-shadow(2px -1px 0 rgba(0, 220, 255, 0.7));
+  }
+  32% {
+    filter: none;
+  }
+  46% {
+    filter: drop-shadow(1px -1px 0 rgba(255, 0, 90, 0.6)) drop-shadow(-1px 1px 0 rgba(0, 220, 255, 0.6));
+  }
+  54% {
+    filter: none;
+  }
+  70% {
+    filter: drop-shadow(-1px 0 0 rgba(255, 0, 90, 0.6)) drop-shadow(1px 0 0 rgba(0, 220, 255, 0.6));
+  }
+  78% {
+    filter: none;
+  }
+}
+
 
 .pa__card-icon {
   width: 14px;
@@ -1197,6 +1232,10 @@ a {
 
 .consulting__intro-cta:hover .consulting__intro-cta-arrow {
   color: #0d0d0d;
+}
+
+.consulting__intro-cta:hover .consulting__intro-cta-arrow svg {
+  animation: btn-arrow-glitch 0.9s steps(1, jump-end) infinite;
 }
 
 .consulting__intro-cta-arrow {
@@ -3014,6 +3053,10 @@ a {
   color: var(--bone);
 }
 
+.tr__link:hover .tr__link-arrow svg {
+  animation: btn-arrow-glitch 0.9s steps(1, jump-end) infinite;
+}
+
 
 
 .tr__cards-nav {
@@ -3122,6 +3165,11 @@ a {
     border-color: #000000;
     color: var(--blue-light);
     outline: none;
+  }
+
+  .tr__cards-arrow:hover svg,
+  .tr__cards-arrow:focus-visible svg {
+    animation: btn-arrow-glitch 0.9s steps(1, jump-end) infinite;
   }
 
   .tr__cards-dots {
@@ -3358,6 +3406,10 @@ a {
 
 .contact__submit:hover .contact__submit-arrow {
   color: #0d0d0d;
+}
+
+.contact__submit:hover .contact__submit-arrow svg {
+  animation: btn-arrow-glitch 0.9s steps(1, jump-end) infinite;
 }
 
 .contact__submit:disabled {
